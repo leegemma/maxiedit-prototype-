@@ -77,7 +77,7 @@
       justify-content: center;
       align-items: center;
     }
-    .overlay.is-open { display: flex; }
+    .overlay.is-open { display: flex !important; }
     .overlay.edit { z-index: 100; }
     .overlay.result { z-index: 200; }
     .overlay.textedit { z-index: 300; }
@@ -818,16 +818,16 @@
     };
 
     const openEdit = () => {
-      editOverlay.classList.add('is-open');
       editOverlay.removeAttribute('hidden');
+      editOverlay.classList.add('is-open');
     };
     const closeEdit = () => {
       editOverlay.classList.remove('is-open');
       editOverlay.setAttribute('hidden', '');
     };
     const openResult = () => {
-      resultOverlay.classList.add('is-open');
       resultOverlay.removeAttribute('hidden');
+      resultOverlay.classList.add('is-open');
     };
     const closeResult = () => {
       resultOverlay.classList.remove('is-open');
@@ -899,8 +899,8 @@
         row.appendChild(input);
         texteditList.appendChild(row);
       });
-      texteditOverlay.classList.add('is-open');
       texteditOverlay.removeAttribute('hidden');
+      texteditOverlay.classList.add('is-open');
     };
 
     const closeTextedit = () => {

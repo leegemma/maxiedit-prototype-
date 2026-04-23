@@ -413,6 +413,9 @@
       font-weight: 700;
       border: none;
       cursor: pointer;
+      touch-action: manipulation;
+      position: relative;
+      z-index: 1;
     }
     .btn-next-main:disabled { background: #555; color: #999; cursor: not-allowed; }
 
@@ -828,9 +831,11 @@
     const openResult = () => {
       resultOverlay.removeAttribute('hidden');
       resultOverlay.classList.add('is-open');
+      resultOverlay.style.display = 'flex';
     };
     const closeResult = () => {
       resultOverlay.classList.remove('is-open');
+      resultOverlay.style.display = '';
       resultOverlay.setAttribute('hidden', '');
     };
 
@@ -841,9 +846,19 @@
       selected.length = 0;
       render();
     });
-    btnNext.addEventListener('click', () => {
+    const handleNext = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
       if (selected.length === 0) return;
       openResult();
+    };
+    btnNext.addEventListener('click', handleNext);
+    btnNext.addEventListener('touchend', handleNext);
+    // Delegated fallback in case the direct listener is swallowed somewhere
+    document.addEventListener('click', (e) => {
+      const t = e.target.closest && e.target.closest('#btn-next');
+      if (t && !t.disabled && !resultOverlay.classList.contains('is-open')) {
+        handleNext(e);
+      }
     });
     btnClose.addEventListener('click', closeResult);
 

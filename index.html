@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>MaxiEdit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Myeongjo:wght@700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #000; font-family: 'Inter', 'Noto Sans KR', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { display: flex; justify-content: center; overflow: hidden; }
+    button { font-family: inherit; }
+
+    :root { --preview-scale: 0.4; }
+
+    .screen {
+      position: relative;
+      width: 393px;
+      height: 852px;
+      max-width: 100vw;
+      max-height: 100vh;
+      background: #000;
+      overflow: hidden;
+    }
+
+    /* 00_home */
+    .home-title {
+      position: absolute;
+      top: 29px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 34px;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .btn-camera, .btn-start {
+      position: absolute;
+      left: 16px;
+      width: 361px;
+      height: 323px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #000;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-camera { top: 98px; background: #aaa; }
+    .btn-start  { top: 447px; background: #fffb8a; }
+
+    /* overlays */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    .overlay.is-open { display: flex; }
+    .overlay.edit { z-index: 100; }
+    .overlay.result { z-index: 200; }
+    .overlay.textedit { z-index: 300; }
+
+    /* 11_textedit modal */
+    .textedit-modal {
+      width: 320px;
+      max-width: 85vw;
+      max-height: 80vh;
+      background: #fff;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+    }
+    .textedit-list {
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 20px 24px;
+      background: #f2f2f2;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .textedit-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0;
+    }
+    .textedit-num {
+      flex-shrink: 0;
+      min-width: 30px;
+      font-family: 'Nanum Myeongjo', serif;
+      font-weight: 700;
+      font-size: 15px;
+      color: #000;
+      user-select: none;
+    }
+    .textedit-input {
+      flex: 1 1 auto;
+      min-width: 0;
+      border: none;
+      background: transparent;
+      font-family: 'Nanum Myeongjo', serif;
+      font-size: 15px;
+      color: #000;
+      padding: 4px 2px;
+      outline: none;
+    }
+    .textedit-input:focus { background: rgba(255, 246, 0, 0.25); border-radius: 2px; }
+    .textedit-actions {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: #fff;
+      gap: 12px;
+    }
+    .btn-textedit-cancel, .btn-textedit-confirm {
+      height: 38px;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      border-radius: 4px;
+    }
+    .btn-textedit-cancel { padding: 0 16px; background: transparent; color: #555; }
+    .btn-textedit-confirm { padding: 0 32px; background: #fff600; color: #000; }
+
+    /* 02_edit */
+    .edit {
+      position: relative;
+      width: 393px;
+      height: 852px;
+      max-width: 100vw;
+      max-height: 100vh;
+      background: #000;
+      overflow: hidden;
+      color: #fff;
+    }
+    .edit-header {
+      position: absolute;
+      top: 37px;
+      left: 0;
+      right: 0;
+      height: 35px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 4;
+    }
+    /* shadcn/ui-style icon buttons (Lucide icons) */
+    .btn-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: transparent;
+      border: none;
+      color: #ffffff;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.15s, opacity 0.15s;
+    }
+    .btn-icon:hover { background: rgba(255, 255, 255, 0.08); }
+    .btn-icon:active { background: rgba(255, 255, 255, 0.16); }
+    .btn-icon:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-icon:disabled:hover { background: transparent; }
+    .btn-icon svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    /* preview (full_image scaled, aspect ratio preserved) */
+    .preview {
+      position: absolute;
+      top: 94px;
+      left: 0;
+      right: 0;
+      height: calc(522px * var(--preview-scale));
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      z-index: 1;
+    }
+    .preview-viewport {
+      width: calc(393px * var(--preview-scale));
+      height: calc(522px * var(--preview-scale));
+      overflow: hidden;
+      position: relative;
+    }
+    .preview .full-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform: scale(var(--preview-scale));
+      transform-origin: top left;
+    }
+
+    /* bottom_layer_imageList — tabs + picker grid */
+    .bottom-layer-imagelist {
+      position: absolute;
+      top: calc(94px + 522px * var(--preview-scale));
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #000;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+    }
+    .category-tabs {
+      flex: 0 0 auto;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 16px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+    }
+    .category-tabs::-webkit-scrollbar { display: none; }
+    .cat-tab {
+      background: transparent;
+      border: none;
+      color: #bbb;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .cat-tab.is-active { background: #fff; color: #000; font-weight: 700; }
+
+    .picker-grid {
+      flex: 1 1 0;
+      min-height: 0;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: calc((393px - 8px) / 3);
+      gap: 2px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding: 0 2px 90px;
+    }
+    .photo-item {
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      background-size: cover;
+      background-position: center;
+    }
+    .icon-check {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      pointer-events: none;
+      font-family: 'Inter', sans-serif;
+    }
+    .icon-check.off {
+      background: transparent;
+      border: 1.5px solid #fff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+      color: transparent;
+    }
+    .icon-check.on {
+      background: #fff;
+      border: 1.5px solid #fff;
+      color: #000;
+    }
+
+    /* bottom_layer_select — always on top, pinned to bottom */
+    .bottom-layer-select {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 82px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      background: rgba(40, 40, 40, 0.92);
+      backdrop-filter: blur(6px);
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+      z-index: 3;
+    }
+    .selected-thumbs {
+      flex: 0 0 248px;
+      width: 248px;
+      max-width: 248px;
+      min-width: 0;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      scroll-snap-type: x mandatory;
+      padding: 3px 0;
+    }
+    .selected-thumbs::-webkit-scrollbar { display: none; }
+    .selected-thumbs:empty::before {
+      content: '선택된 사진 없음';
+      color: #888;
+      font-size: 12px;
+      align-self: center;
+      padding-left: 4px;
+      flex-shrink: 0;
+    }
+    .thumb {
+      position: relative;
+      width: 56px;
+      height: 56px;
+      flex-shrink: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      background-size: cover;
+      background-position: center;
+      scroll-snap-align: start;
+      touch-action: none; /* so long-press drag works on touch */
+    }
+    .thumb.sortable-ghost { opacity: 0.4; }
+    .thumb.sortable-chosen { transform: scale(1.08); box-shadow: 0 6px 16px rgba(0,0,0,0.5); z-index: 10; }
+    .thumb-num {
+      position: absolute;
+      left: 4px;
+      bottom: 2px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+      pointer-events: none;
+    }
+    .thumb-remove {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      background: #ff3b30;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1;
+      padding: 0;
+    }
+    .thumb-remove::before { content: '−'; }
+
+    .btn-next-main {
+      flex-shrink: 0;
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 4px;
+      background: #fff;
+      color: #000;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-next-main:disabled { background: #555; color: #999; cursor: not-allowed; }
+
+    /* 10_result */
+    .result {
+      position: relative;
+      width: 393px;
+      height: 852px;
+      max-width: 100vw;
+      max-height: 100vh;
+      background: #000;
+      overflow: hidden;
+    }
+    .btn-close, .btn-download {
+      position: absolute;
+      top: 37px;
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-close {
+      left: 8px;
+      padding: 8px;
+      background: transparent;
+      color: #ffffff;
+    }
+    .btn-close:hover { background: rgba(255,255,255,0.08); }
+    .btn-close:active { background: rgba(255,255,255,0.16); }
+    .btn-download {
+      right: 15px;
+      padding: 8px 14px;
+      background: #fff600;
+      color: #000;
+    }
+    .btn-close svg, .btn-download svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      display: block;
+    }
+
+    /* shared full_image */
+    .full-image {
+      width: 393px;
+      height: 522px;
+      background: #fff;
+      overflow: hidden;
+      position: relative;
+    }
+    .result .full-image {
+      position: absolute;
+      top: 94px;
+      left: 0;
+    }
+    .result-grid {
+      position: absolute;
+      top: 15px;
+      left: 0;
+      width: 393px;
+      display: flex;
+      flex-direction: column;
+      gap: 31px;
+    }
+    .result-row {
+      display: flex;
+      align-items: center;
+      padding: 0 15px;
+      width: 100%;
+    }
+    .result-cell {
+      flex: 1 0 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    .p-section {
+      width: 100%;
+      height: 86px;
+      opacity: 0.7;
+    }
+    .photo-title {
+      font-family: 'Nanum Myeongjo', serif;
+      font-weight: 700;
+      font-size: 9px;
+      color: #000;
+      white-space: nowrap;
+    }
+
+    .textarea {
+      position: absolute;
+      top: 448px;
+      left: 13px;
+      display: flex;
+      gap: 17px;
+      font-family: 'Nanum Myeongjo', serif;
+      font-weight: 800;
+      font-size: 8px;
+      color: #000;
+    }
+    .textarea p { line-height: 11px; white-space: nowrap; }
+
+    .btn-reset {
+      position: absolute;
+      top: 670px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px 20px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: #fff;
+    }
+    .btn-reset svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      display: block;
+    }
+    .btn-reset-label { font-size: 14px; color: #fff; }
+  </style>
+</head>
+<body>
+  <main class="screen" data-name="00_home">
+    <h1 class="home-title">MaxiEdit</h1>
+    <button class="btn-camera" type="button" data-name="btn_camera">사진찍기</button>
+    <button class="btn-start" type="button" id="btn-start" data-name="btn_start">편집하기</button>
+  </main>
+
+  <!-- 02_edit overlay -->
+  <div class="overlay edit" id="edit-overlay" role="dialog" aria-modal="true" hidden>
+    <section class="edit" data-name="02_edit">
+      <div class="edit-header">
+        <button class="btn-icon" type="button" id="btn-edit-close" data-name="btn_close" aria-label="닫기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        <button class="btn-icon" type="button" id="btn-reset-top" data-name="btn_reset" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          <span>초기화</span>
+        </button>
+      </div>
+
+      <div class="preview" data-name="preview">
+        <div class="preview-viewport">
+          <div class="full-image" id="preview-full-image">
+            <div class="result-grid" id="preview-grid"></div>
+            <div class="textarea" id="preview-textarea"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-layer-imagelist" data-name="bottom_layer_imageList">
+        <div class="category-tabs">
+          <button class="cat-tab is-active" type="button">최근항목</button>
+          <button class="cat-tab" type="button">즐겨찾기</button>
+          <button class="cat-tab" type="button">Video</button>
+          <button class="cat-tab" type="button">셀피</button>
+          <button class="cat-tab" type="button">Live Photo</button>
+          <button class="cat-tab" type="button">파노라마</button>
+          <button class="cat-tab" type="button">고속 연사 촬영</button>
+          <button class="cat-tab" type="button">스크린샷</button>
+          <button class="cat-tab" type="button">움직이는 항목</button>
+          <button class="cat-tab" type="button">RAW</button>
+          <button class="cat-tab" type="button">최근 저장된 항목</button>
+        </div>
+        <div class="picker-grid" id="picker-grid"></div>
+      </div>
+
+      <div class="bottom-layer-select" data-name="bottom_layer_select">
+        <div class="selected-thumbs" id="selected-thumbs"></div>
+        <button class="btn-next-main" type="button" id="btn-next" data-name="btn_next" disabled>다음 0/9</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- 10_result overlay -->
+  <div class="overlay result" id="result-overlay" role="dialog" aria-modal="true" hidden>
+    <section class="result" data-name="10_result">
+      <button class="btn-close" type="button" id="btn-close" data-name="btn_close" aria-label="뒤로">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+      </button>
+      <button class="btn-download" type="button" data-name="btn_download">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+        <span>다운로드</span>
+      </button>
+
+      <div class="full-image" data-name="full_image">
+        <div class="result-grid" id="result-grid"></div>
+        <div class="textarea" id="result-textarea"></div>
+      </div>
+
+      <button class="btn-reset" type="button" id="btn-text-tool" data-name="btn_text">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
+        <span class="btn-reset-label">텍스트</span>
+      </button>
+    </section>
+  </div>
+
+  <!-- 11_textedit overlay -->
+  <div class="overlay textedit" id="textedit-overlay" role="dialog" aria-modal="true" aria-label="텍스트 수정" hidden>
+    <div class="textedit-modal" data-name="11_textedit">
+      <div class="textedit-list" id="textedit-list"></div>
+      <div class="textedit-actions">
+        <button class="btn-textedit-cancel" type="button" id="btn-textedit-cancel">취소</button>
+        <button class="btn-textedit-confirm" type="button" id="btn-textedit-confirm">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MAX_SELECT = 9;
+    const SLOT_COLORS = [
+      '#ffefb7', '#ffdfdf', '#d9d9d9',
+      '#d2ecff', '#dcefe7', '#e7e7e7',
+      '#d1f2c2', '#ebdff7', '#d9d9d9'
+    ];
+    const PHOTO_COLORS = (() => {
+      const base = [
+        '#9db0c0', '#a5b6a6', '#a8a8a8', '#8fa3b5', '#b0a899',
+        '#8ca5b8', '#a8b0a0', '#9a9a9a', '#c0b5a0', '#8a9db0',
+        '#b8a898', '#9eb0a0', '#a0a5b0', '#b0988a', '#90a8b0',
+        '#a8a098', '#98a8a0', '#b0a898'
+      ];
+      const out = [];
+      for (let i = 0; i < 50; i++) out.push(base[i % base.length]);
+      return out;
+    })();
+
+    const TEXT_LABELS_DEFAULT = [
+      'Personal color',
+      'We can be anything',
+      'Moment',
+      '“What do you think?”',
+      'Look good',
+      'Start to smile',
+      'Preparation',
+      'Nice playlist',
+      'We’re ready'
+    ];
+    const textLabels = [...TEXT_LABELS_DEFAULT];
+
+    const editOverlay = document.getElementById('edit-overlay');
+    const resultOverlay = document.getElementById('result-overlay');
+    const texteditOverlay = document.getElementById('textedit-overlay');
+    const btnStart = document.getElementById('btn-start');
+    const btnEditClose = document.getElementById('btn-edit-close');
+    const btnResetTop = document.getElementById('btn-reset-top');
+    const btnNext = document.getElementById('btn-next');
+    const btnClose = document.getElementById('btn-close');
+    const btnTextTool = document.getElementById('btn-text-tool');
+    const btnTexteditCancel = document.getElementById('btn-textedit-cancel');
+    const btnTexteditConfirm = document.getElementById('btn-textedit-confirm');
+    const pickerGrid = document.getElementById('picker-grid');
+    const previewGridEl = document.getElementById('preview-grid');
+    const resultGridEl = document.getElementById('result-grid');
+    const thumbsEl = document.getElementById('selected-thumbs');
+    const texteditList = document.getElementById('textedit-list');
+    const textareaEls = [
+      document.getElementById('preview-textarea'),
+      document.getElementById('result-textarea')
+    ];
+
+    const selected = [];
+
+    const buildResultStyleGrid = (target) => {
+      target.innerHTML = '';
+      for (let r = 0; r < 3; r++) {
+        const row = document.createElement('div');
+        row.className = 'result-row';
+        for (let c = 0; c < 3; c++) {
+          const slotIndex = r * 3 + c;
+          const cell = document.createElement('div');
+          cell.className = 'result-cell';
+          const section = document.createElement('div');
+          section.className = 'p-section';
+          section.dataset.slot = String(slotIndex);
+          section.style.background = SLOT_COLORS[slotIndex];
+          const title = document.createElement('p');
+          title.className = 'photo-title';
+          title.textContent = `(${slotIndex + 1})`;
+          cell.appendChild(section);
+          cell.appendChild(title);
+          row.appendChild(cell);
+        }
+        target.appendChild(row);
+      }
+    };
+
+    const buildPicker = () => {
+      pickerGrid.innerHTML = '';
+      PHOTO_COLORS.forEach((color, i) => {
+        const item = document.createElement('div');
+        item.className = 'photo-item';
+        item.style.background = color;
+        item.dataset.index = String(i);
+        const icon = document.createElement('span');
+        icon.className = 'icon-check off';
+        icon.dataset.name = 'icon_check_off';
+        item.appendChild(icon);
+        item.addEventListener('click', () => togglePhoto(i));
+        pickerGrid.appendChild(item);
+      });
+    };
+
+    const togglePhoto = (index) => {
+      const pos = selected.indexOf(index);
+      if (pos >= 0) {
+        selected.splice(pos, 1);
+      } else {
+        if (selected.length >= MAX_SELECT) return;
+        selected.push(index);
+      }
+      render();
+    };
+
+    const renderGridSlots = (gridEl) => {
+      gridEl.querySelectorAll('.p-section').forEach((section) => {
+        const slotIndex = Number(section.dataset.slot);
+        const photoIdx = selected[slotIndex];
+        if (photoIdx !== undefined) {
+          section.style.background = PHOTO_COLORS[photoIdx];
+          section.style.opacity = '1';
+        } else {
+          section.style.background = SLOT_COLORS[slotIndex];
+          section.style.opacity = '0.7';
+        }
+      });
+    };
+
+    const render = () => {
+      // picker check icons
+      pickerGrid.querySelectorAll('.photo-item').forEach((item) => {
+        const idx = Number(item.dataset.index);
+        const selPos = selected.indexOf(idx);
+        const icon = item.querySelector('.icon-check');
+        if (selPos >= 0) {
+          icon.classList.remove('off');
+          icon.classList.add('on');
+          icon.dataset.name = 'icon_check_on';
+          icon.dataset.selectNumber = String(selPos + 1);
+          icon.textContent = String(selPos + 1);
+        } else {
+          icon.classList.remove('on');
+          icon.classList.add('off');
+          icon.dataset.name = 'icon_check_off';
+          delete icon.dataset.selectNumber;
+          icon.textContent = '';
+        }
+      });
+
+      renderGridSlots(previewGridEl);
+      renderGridSlots(resultGridEl);
+
+      // bottom thumbs
+      thumbsEl.innerHTML = '';
+      selected.forEach((photoIdx, i) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'thumb';
+        thumb.style.background = PHOTO_COLORS[photoIdx];
+        thumb.dataset.photoIdx = String(photoIdx);
+        const num = document.createElement('span');
+        num.className = 'thumb-num';
+        num.textContent = String(i + 1);
+        const remove = document.createElement('button');
+        remove.className = 'thumb-remove';
+        remove.type = 'button';
+        remove.setAttribute('aria-label', '선택 해제');
+        remove.addEventListener('click', (e) => {
+          e.stopPropagation();
+          togglePhoto(photoIdx);
+        });
+        thumb.appendChild(num);
+        thumb.appendChild(remove);
+        thumbsEl.appendChild(thumb);
+      });
+
+      // buttons
+      const count = selected.length;
+      btnNext.textContent = `다음 ${count}/${MAX_SELECT}`;
+      btnNext.disabled = count === 0;
+      btnResetTop.disabled = count === 0;
+    };
+
+    const openEdit = () => {
+      editOverlay.classList.add('is-open');
+      editOverlay.removeAttribute('hidden');
+    };
+    const closeEdit = () => {
+      editOverlay.classList.remove('is-open');
+      editOverlay.setAttribute('hidden', '');
+    };
+    const openResult = () => {
+      resultOverlay.classList.add('is-open');
+      resultOverlay.removeAttribute('hidden');
+    };
+    const closeResult = () => {
+      resultOverlay.classList.remove('is-open');
+      resultOverlay.setAttribute('hidden', '');
+    };
+
+    btnStart.addEventListener('click', openEdit);
+    btnEditClose.addEventListener('click', closeEdit);
+    btnResetTop.addEventListener('click', () => {
+      if (selected.length === 0) return;
+      selected.length = 0;
+      render();
+    });
+    btnNext.addEventListener('click', () => {
+      if (selected.length === 0) return;
+      openResult();
+    });
+    btnClose.addEventListener('click', closeResult);
+
+    editOverlay.addEventListener('click', (e) => { if (e.target === editOverlay) closeEdit(); });
+    resultOverlay.addEventListener('click', (e) => { if (e.target === resultOverlay) closeResult(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (texteditOverlay.classList.contains('is-open')) closeTextedit();
+      else if (resultOverlay.classList.contains('is-open')) closeResult();
+      else if (editOverlay.classList.contains('is-open')) closeEdit();
+    });
+
+    document.querySelectorAll('.cat-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.cat-tab').forEach((t) => t.classList.remove('is-active'));
+        tab.classList.add('is-active');
+      });
+    });
+
+    const renderTextareas = () => {
+      textareaEls.forEach((ta) => {
+        if (!ta) return;
+        ta.innerHTML = '';
+        const leftCol = document.createElement('div');
+        const rightCol = document.createElement('div');
+        for (let i = 0; i < 9; i++) {
+          const p = document.createElement('p');
+          p.textContent = `(${i + 1}) ${textLabels[i]}`;
+          (i < 4 ? leftCol : rightCol).appendChild(p);
+        }
+        ta.appendChild(leftCol);
+        ta.appendChild(rightCol);
+      });
+    };
+
+    const openTextedit = () => {
+      texteditList.innerHTML = '';
+      textLabels.forEach((label, i) => {
+        const row = document.createElement('div');
+        row.className = 'textedit-row';
+        const num = document.createElement('span');
+        num.className = 'textedit-num';
+        num.textContent = `(${i + 1})`;
+        const input = document.createElement('input');
+        input.className = 'textedit-input';
+        input.type = 'text';
+        input.value = label;
+        input.dataset.index = String(i);
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('autocorrect', 'off');
+        input.setAttribute('autocapitalize', 'off');
+        row.appendChild(num);
+        row.appendChild(input);
+        texteditList.appendChild(row);
+      });
+      texteditOverlay.classList.add('is-open');
+      texteditOverlay.removeAttribute('hidden');
+    };
+
+    const closeTextedit = () => {
+      texteditOverlay.classList.remove('is-open');
+      texteditOverlay.setAttribute('hidden', '');
+    };
+
+    const confirmTextedit = () => {
+      texteditList.querySelectorAll('.textedit-input').forEach((input) => {
+        const idx = Number(input.dataset.index);
+        textLabels[idx] = input.value;
+      });
+      renderTextareas();
+      closeTextedit();
+    };
+
+    btnTextTool.addEventListener('click', openTextedit);
+    btnTexteditCancel.addEventListener('click', closeTextedit);
+    btnTexteditConfirm.addEventListener('click', confirmTextedit);
+    texteditOverlay.addEventListener('click', (e) => {
+      if (e.target === texteditOverlay) closeTextedit();
+    });
+
+    buildResultStyleGrid(previewGridEl);
+    buildResultStyleGrid(resultGridEl);
+    buildPicker();
+    renderTextareas();
+    render();
+
+    // Long-press drag-reorder for selected thumbs
+    if (typeof Sortable !== 'undefined') {
+      Sortable.create(thumbsEl, {
+        delay: 300,
+        delayOnTouchOnly: false,
+        animation: 160,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        filter: '.thumb-remove',
+        preventOnFilter: true,
+        onEnd(evt) {
+          if (evt.oldIndex === evt.newIndex) return;
+          const [moved] = selected.splice(evt.oldIndex, 1);
+          selected.splice(evt.newIndex, 0, moved);
+          render();
+        }
+      });
+    }
+  </script>
+</body>
+</html>

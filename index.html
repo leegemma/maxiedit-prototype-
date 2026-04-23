@@ -846,18 +846,23 @@
       selected.length = 0;
       render();
     });
-    const handleNext = (e) => {
-      if (e) { e.preventDefault(); e.stopPropagation(); }
+    const handleNext = () => {
+      // Diagnostic flash — tells us the handler fired even if openResult fails.
+      const prev = btnNext.style.background;
+      btnNext.style.background = '#ff3b30';
+      btnNext.style.color = '#fff';
+      setTimeout(() => { btnNext.style.background = prev; btnNext.style.color = ''; }, 250);
+
       if (selected.length === 0) return;
       openResult();
     };
     btnNext.addEventListener('click', handleNext);
-    btnNext.addEventListener('touchend', handleNext);
-    // Delegated fallback in case the direct listener is swallowed somewhere
+    // Delegated fallback — fires only if the direct listener didn't run.
     document.addEventListener('click', (e) => {
-      const t = e.target.closest && e.target.closest('#btn-next');
-      if (t && !t.disabled && !resultOverlay.classList.contains('is-open')) {
-        handleNext(e);
+      if (!e.target || !e.target.closest) return;
+      const t = e.target.closest('#btn-next');
+      if (t && !t.disabled && !resultOverlay.classList.contains('is-open') && btnNext.style.background !== 'rgb(255, 59, 48)') {
+        handleNext();
       }
     });
     btnClose.addEventListener('click', closeResult);

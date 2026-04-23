@@ -12,17 +12,28 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     [hidden] { display: none !important; }
     html, body { height: 100%; background: #000; font-family: 'Inter', 'Noto Sans KR', sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { display: flex; justify-content: center; overflow: hidden; }
+    body { display: flex; justify-content: center; align-items: center; overflow: hidden; }
     button { font-family: inherit; }
 
     :root { --preview-scale: 0.4; }
 
-    .screen {
+    /* phone-sized frame that contains all screens and overlays */
+    .app-frame {
       position: relative;
       width: 393px;
       height: 852px;
       max-width: 100vw;
       max-height: 100vh;
+      background: #000;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       background: #000;
       overflow: hidden;
     }
@@ -54,9 +65,9 @@
     .btn-camera { top: 98px; background: #aaa; }
     .btn-start  { top: 447px; background: #fffb8a; }
 
-    /* overlays */
+    /* overlays — contained within .app-frame, not the viewport */
     .overlay {
-      position: fixed;
+      position: absolute;
       top: 0;
       left: 0;
       right: 0;
@@ -142,10 +153,8 @@
     /* 02_edit */
     .edit {
       position: relative;
-      width: 393px;
-      height: 852px;
-      max-width: 100vw;
-      max-height: 100vh;
+      width: 100%;
+      height: 100%;
       background: #000;
       overflow: hidden;
       color: #fff;
@@ -410,10 +419,8 @@
     /* 10_result */
     .result {
       position: relative;
-      width: 393px;
-      height: 852px;
-      max-width: 100vw;
-      max-height: 100vh;
+      width: 100%;
+      height: 100%;
       background: #000;
       overflow: hidden;
     }
@@ -548,6 +555,7 @@
   </style>
 </head>
 <body>
+  <div class="app-frame">
   <main class="screen" data-name="00_home">
     <h1 class="home-title">MaxiEdit</h1>
     <button class="btn-camera" type="button" data-name="btn_camera">사진찍기</button>
@@ -633,6 +641,7 @@
       </div>
     </div>
   </div>
+  </div><!-- /.app-frame -->
 
   <script>
     const MAX_SELECT = 9;

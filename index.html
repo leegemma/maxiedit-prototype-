@@ -79,8 +79,8 @@
     }
     .overlay.is-open { display: flex !important; }
     .overlay.edit { z-index: 100; }
-    .overlay.result { z-index: 200; }
-    .overlay.textedit { z-index: 300; }
+    .overlay.result { z-index: 1000; }
+    .overlay.textedit { z-index: 2000; }
 
     /* 11_textedit modal */
     .textedit-modal {
@@ -414,8 +414,6 @@
       border: none;
       cursor: pointer;
       touch-action: manipulation;
-      position: relative;
-      z-index: 1;
     }
     .btn-next-main:disabled { background: #555; color: #999; cursor: not-allowed; }
 
@@ -820,38 +818,21 @@
       btnResetTop.disabled = count === 0;
     };
 
-    const openEdit = () => {
-      editOverlay.removeAttribute('hidden');
-      editOverlay.classList.add('is-open');
+    // All overlays use this same open/close pattern so stacking stays correct.
+    const showOverlay = (el) => {
+      el.removeAttribute('hidden');
+      el.classList.add('is-open');
+      el.style.display = 'flex';
     };
-    const closeEdit = () => {
-      editOverlay.classList.remove('is-open');
-      editOverlay.setAttribute('hidden', '');
+    const hideOverlay = (el) => {
+      el.classList.remove('is-open');
+      el.style.display = '';
+      el.setAttribute('hidden', '');
     };
-    const openResult = () => {
-      resultOverlay.removeAttribute('hidden');
-      resultOverlay.classList.add('is-open');
-      // Force visibility via inline styles — eliminate any CSS override path.
-      resultOverlay.style.cssText = (
-        'display: flex !important;' +
-        'position: absolute !important;' +
-        'top: 0 !important;' +
-        'left: 0 !important;' +
-        'right: 0 !important;' +
-        'bottom: 0 !important;' +
-        'width: 100% !important;' +
-        'height: 100% !important;' +
-        'z-index: 9999 !important;' +
-        'background: rgba(0, 0, 0, 0.5) !important;' +
-        'visibility: visible !important;' +
-        'opacity: 1 !important;'
-      );
-    };
-    const closeResult = () => {
-      resultOverlay.classList.remove('is-open');
-      resultOverlay.style.display = '';
-      resultOverlay.setAttribute('hidden', '');
-    };
+    const openEdit = () => showOverlay(editOverlay);
+    const closeEdit = () => hideOverlay(editOverlay);
+    const openResult = () => showOverlay(resultOverlay);
+    const closeResult = () => hideOverlay(resultOverlay);
 
     btnStart.addEventListener('click', openEdit);
     btnEditClose.addEventListener('click', closeEdit);
@@ -860,24 +841,9 @@
       selected.length = 0;
       render();
     });
-    const handleNext = () => {
-      // Diagnostic flash — tells us the handler fired even if openResult fails.
-      const prev = btnNext.style.background;
-      btnNext.style.background = '#ff3b30';
-      btnNext.style.color = '#fff';
-      setTimeout(() => { btnNext.style.background = prev; btnNext.style.color = ''; }, 250);
-
+    btnNext.addEventListener('click', () => {
       if (selected.length === 0) return;
       openResult();
-    };
-    btnNext.addEventListener('click', handleNext);
-    // Delegated fallback — fires only if the direct listener didn't run.
-    document.addEventListener('click', (e) => {
-      if (!e.target || !e.target.closest) return;
-      const t = e.target.closest('#btn-next');
-      if (t && !t.disabled && !resultOverlay.classList.contains('is-open') && btnNext.style.background !== 'rgb(255, 59, 48)') {
-        handleNext();
-      }
     });
     btnClose.addEventListener('click', closeResult);
 
@@ -933,14 +899,10 @@
         row.appendChild(input);
         texteditList.appendChild(row);
       });
-      texteditOverlay.removeAttribute('hidden');
-      texteditOverlay.classList.add('is-open');
+      showOverlay(texteditOverlay);
     };
 
-    const closeTextedit = () => {
-      texteditOverlay.classList.remove('is-open');
-      texteditOverlay.setAttribute('hidden', '');
-    };
+    const closeTextedit = () => hideOverlay(texteditOverlay);
 
     const confirmTextedit = () => {
       texteditList.querySelectorAll('.textedit-input').forEach((input) => {

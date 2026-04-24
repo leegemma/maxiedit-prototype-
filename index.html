@@ -611,6 +611,33 @@
     }
     .btn-reset-label { font-size: 14px; color: #fff; }
 
+    /* loading bar — shown during photo/video processing */
+    .loading-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      z-index: 5000;
+      pointer-events: none;
+    }
+    .loading-bar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 35%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, #fff600, transparent);
+      animation: loading-slide 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+    @keyframes loading-slide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(calc(100vw / 0.35)); }
+    }
+
     /* toast */
     .toast {
       position: absolute;
@@ -748,6 +775,7 @@
       </div>
     </div>
   </div>
+  <div class="loading-bar" id="loading-bar" hidden></div>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden>
     <svg class="toast-check" viewBox="0 0 24 24" aria-hidden="true">
       <circle class="toast-check-ring" cx="12" cy="12" r="10"/>
@@ -887,6 +915,7 @@
     const btnDownload = document.getElementById('btn-download');
     const toastEl = document.getElementById('toast');
     const toastTextEl = document.getElementById('toast-text');
+    const loadingBarEl = document.getElementById('loading-bar');
     const btnTextTool = document.getElementById('btn-text-tool');
     const btnTexteditCancel = document.getElementById('btn-textedit-cancel');
     const btnTexteditConfirm = document.getElementById('btn-textedit-confirm');
@@ -1063,6 +1092,15 @@
       if (p.originalUrl && p.originalUrl !== p.url) URL.revokeObjectURL(p.originalUrl);
     };
 
+    // File type detection — iOS sometimes hands us a file with an empty MIME string,
+    // so fall back to extension matching when `type` is missing.
+    const isVideoFile = (f) =>
+      (f.type && f.type.startsWith('video/')) ||
+      /\.(mp4|mov|m4v|webm|avi|mkv|3gp)$/i.test(f.name || '');
+    const isImageFile = (f) =>
+      (f.type && f.type.startsWith('image/')) ||
+      /\.(jpg|jpeg|png|gif|webp|heic|heif|bmp)$/i.test(f.name || '');
+
     // Load files from <input type="file"> into photos[] and rebuild the picker.
     // Supports both images and videos (videos get a first-frame thumbnail).
     const loadPhotoFiles = async (fileList) => {
@@ -1072,23 +1110,44 @@
       photos.forEach(revokeMedia);
       photos.length = 0;
       selected.length = 0;
-      const skipped = [];
-      for (const f of files) {
-        if (f.type.startsWith('video/')) {
-          try {
-            const { thumbUrl, originalUrl, duration } = await generateVideoThumbnail(f);
-            photos.push({ url: thumbUrl, originalUrl, name: f.name, type: 'video', duration });
-          } catch (err) {
-            console.warn('video thumbnail failed for', f.name, err);
-            skipped.push(f.name);
+
+      loadingBarEl.removeAttribute('hidden');
+      let thumbFailures = [];
+      let firstError = '';
+      try {
+        for (const f of files) {
+          if (isVideoFile(f)) {
+            try {
+              const { thumbUrl, originalUrl, duration } = await generateVideoThumbnail(f);
+              photos.push({ url: thumbUrl, originalUrl, name: f.name, type: 'video', duration });
+            } catch (err) {
+              console.warn('video thumbnail failed for', f.name, err);
+              thumbFailures.push(f.name);
+              if (!firstError) firstError = err && err.message ? err.message : String(err);
+              // Still include the video with a placeholder thumbnail — the file is
+              // there, it just didn't render a frame preview.
+              const url = URL.createObjectURL(f);
+              photos.push({
+                url: VIDEO_FALLBACK_THUMB,
+                originalUrl: url,
+                name: f.name,
+                type: 'video',
+                duration: null,
+              });
+            }
+          } else if (isImageFile(f)) {
+            const url = URL.createObjectURL(f);
+            photos.push({ url, originalUrl: url, name: f.name, type: 'image' });
+          } else {
+            console.warn('skipped file of unsupported type', f.name, f.type);
           }
-        } else if (f.type.startsWith('image/')) {
-          const url = URL.createObjectURL(f);
-          photos.push({ url, originalUrl: url, name: f.name, type: 'image' });
         }
+      } finally {
+        loadingBarEl.setAttribute('hidden', '');
       }
-      if (skipped.length) {
-        showToast(`동영상 ${skipped.length}개 첨부 실패`);
+
+      if (thumbFailures.length) {
+        showToast(`썸네일 실패 ${thumbFailures.length}개 · ${firstError.slice(0, 40)}`);
       }
       buildPicker();
       render();

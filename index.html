@@ -709,15 +709,16 @@
       scroll-snap-stop: always;
       display: flex;
       flex-direction: column;
+      align-items: flex-start;  /* anchored top-left so shrunken preview isn't pinned to center */
       background: #000;
       overflow: hidden;
       min-width: 0;
-      padding: 0 40px;          /* side padding shrinks the visible split area */
       box-sizing: border-box;
     }
     .split-slide.is-flipped { flex-direction: column-reverse; }
     .split-image {
-      flex: 0 0 50%;            /* exact 5:5 vertical split */
+      width: 80%;                /* 80% of slide width */
+      flex: 0 0 40%;             /* 40% of slide height → 50/50 of total 80% block */
       min-height: 0;
       position: relative;
       overflow: hidden;
@@ -735,7 +736,8 @@
       display: block;
     }
     .split-text {
-      flex: 0 0 50%;            /* exact 5:5 vertical split */
+      width: 80%;                /* matches image panel width */
+      flex: 0 0 40%;             /* matches image panel height */
       min-height: 0;
       display: flex;
       align-items: center;
@@ -988,35 +990,23 @@
     </section>
   </section>
 
-  <!-- download format chooser modal -->
+  <!-- download format chooser modal (shared by 10_result and 12_single) -->
   <div class="modal" id="download-modal" role="dialog" aria-modal="true" aria-label="다운로드 형식" hidden>
     <div class="download-card">
       <h3>어떻게 저장할까요?</h3>
       <button type="button" id="btn-download-png">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        사진으로 저장 (PNG)
+        사진으로 저장
       </button>
       <button type="button" id="btn-download-mp4">
         <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-        영상으로 저장 (MP4)
+        영상으로 저장
+      </button>
+      <button type="button" id="btn-download-all">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        모두 저장
       </button>
       <button type="button" id="btn-download-cancel">취소</button>
-    </div>
-  </div>
-
-  <!-- single-slide download chooser (PNG / MP4 / GIF) -->
-  <div class="modal" id="single-download-modal" role="dialog" aria-modal="true" aria-label="다운로드 형식" hidden>
-    <div class="download-card">
-      <h3>어떻게 저장할까요?</h3>
-      <button type="button" id="btn-sd-png">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        사진으로 저장 (PNG)
-      </button>
-      <button type="button" id="btn-sd-mp4">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-        영상으로 저장 (MP4)
-      </button>
-      <button type="button" id="btn-sd-cancel">취소</button>
     </div>
   </div>
 
@@ -1191,10 +1181,7 @@
     const btnTextSingle = document.getElementById('btn-text-single');
     const btnFlip = document.getElementById('btn-flip');
     const resultIndicator = document.getElementById('result-indicator');
-    const singleDownloadModal = document.getElementById('single-download-modal');
-    const btnSdPng = document.getElementById('btn-sd-png');
-    const btnSdMp4 = document.getElementById('btn-sd-mp4');
-    const btnSdCancel = document.getElementById('btn-sd-cancel');
+    const btnDownloadAll = document.getElementById('btn-download-all');
     const pickerGrid = document.getElementById('picker-grid');
     const photoInput = document.getElementById('photo-input');
     const previewGridEl = document.getElementById('preview-grid');
@@ -1916,20 +1903,55 @@
       }
     };
 
-    // Download button: if any selected item is a video, ask the user which format.
+    // Download button: open chooser. Options PNG / MP4 / 모두 저장 / 취소.
     const downloadModal = document.getElementById('download-modal');
     const btnDownloadPng = document.getElementById('btn-download-png');
     const btnDownloadMp4 = document.getElementById('btn-download-mp4');
     const btnDownloadCancel = document.getElementById('btn-download-cancel');
-    btnDownload.addEventListener('click', () => {
-      const hasVideo = selected.some((i) => photos[i] && photos[i].type === 'video');
-      if (!hasVideo) { downloadPng(); return; }
+    const openDownloadModal = () => {
+      if (selected.length === 0) return;
       showModal(downloadModal);
+    };
+    btnDownload.addEventListener('click', openDownloadModal);
+    // PNG: use full-page PNG when on 10_result, single-slide PNG when on 12_single
+    btnDownloadPng.addEventListener('click', () => {
+      hideModal(downloadModal);
+      if (currentPage === 'single') downloadSinglePng();
+      else downloadPng();
     });
-    btnDownloadPng.addEventListener('click', () => { hideModal(downloadModal); downloadPng(); });
-    btnDownloadMp4.addEventListener('click', () => { hideModal(downloadModal); downloadMp4(); });
+    btnDownloadMp4.addEventListener('click', () => {
+      hideModal(downloadModal);
+      if (currentPage === 'single') downloadSingleMp4();
+      else downloadMp4();
+    });
+    btnDownloadAll.addEventListener('click', () => {
+      hideModal(downloadModal);
+      downloadAllContent();
+    });
     btnDownloadCancel.addEventListener('click', () => hideModal(downloadModal));
     downloadModal.addEventListener('click', (e) => { if (e.target === downloadModal) hideModal(downloadModal); });
+
+    // Save every output in one sweep. The full 10_result is saved as PNG when
+    // there are no video selections, otherwise as MP4. Each 12_single slide is
+    // saved as PNG if that slot is an image, MP4 if it's a video.
+    const downloadAllContent = async () => {
+      if (selected.length === 0) return;
+      const anyVideo = selected.some((i) => photos[i] && photos[i].type === 'video');
+      try {
+        if (anyVideo) await downloadMp4();
+        else await downloadPng();
+      } catch (err) { console.warn('full save failed', err); }
+      for (let i = 0; i < selected.length; i++) {
+        const photoIdx = selected[i];
+        const slotIsVideo = photos[photoIdx] && photos[photoIdx].type === 'video';
+        currentSingleIdx = i;
+        try {
+          if (slotIsVideo) await downloadSingleMp4();
+          else await downloadSinglePng();
+        } catch (err) { console.warn(`slide ${i} save failed`, err); }
+      }
+      showToast('전체 저장 완료');
+    };
 
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
@@ -2108,6 +2130,19 @@
       }, 60);
     }, { passive: true });
 
+    // Rightward swipe at the leftmost slide = go back to 10_result (mirrors the
+    // leftmost indicator click behavior, but as a swipe gesture).
+    let singleTouchStartX = null;
+    splitTrack.addEventListener('touchstart', (e) => {
+      singleTouchStartX = (splitTrack.scrollLeft === 0) ? e.touches[0].clientX : null;
+    }, { passive: true });
+    splitTrack.addEventListener('touchend', (e) => {
+      if (singleTouchStartX === null) return;
+      const dx = e.changedTouches[0].clientX - singleTouchStartX;
+      singleTouchStartX = null;
+      if (dx > 80 && splitTrack.scrollLeft === 0) goTo('result');
+    }, { passive: true });
+
     btnSingleClose.addEventListener('click', () => goTo('result'));
     btnFlip.addEventListener('click', () => {
       const slide = splitTrack.children[currentSingleIdx];
@@ -2278,17 +2313,8 @@
       }
     };
 
-    // Single download button → show format chooser modal.
-    btnSingleDownload.addEventListener('click', () => {
-      if (selected.length === 0) return;
-      showModal(singleDownloadModal);
-    });
-    btnSdPng.addEventListener('click', () => { hideModal(singleDownloadModal); downloadSinglePng(); });
-    btnSdMp4.addEventListener('click', () => { hideModal(singleDownloadModal); downloadSingleMp4(); });
-    btnSdCancel.addEventListener('click', () => hideModal(singleDownloadModal));
-    singleDownloadModal.addEventListener('click', (e) => {
-      if (e.target === singleDownloadModal) hideModal(singleDownloadModal);
-    });
+    // Single view download button → use the same chooser modal (context-aware).
+    btnSingleDownload.addEventListener('click', openDownloadModal);
 
     // Swipe on 10_result → jump to single view (slot 0).
     const resultSection = document.querySelector('#page-result .result');

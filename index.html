@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Myeongjo:wght@700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     [hidden] { display: none !important; }
@@ -642,7 +643,7 @@
       <button class="btn-close" type="button" id="btn-close" data-name="btn_close" aria-label="뒤로">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
       </button>
-      <button class="btn-download" type="button" data-name="btn_download">
+      <button class="btn-download" type="button" id="btn-download" data-name="btn_download">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
         <span>다운로드</span>
       </button>
@@ -704,6 +705,7 @@
     const btnResetTop = document.getElementById('btn-reset-top');
     const btnNext = document.getElementById('btn-next');
     const btnClose = document.getElementById('btn-close');
+    const btnDownload = document.getElementById('btn-download');
     const btnTextTool = document.getElementById('btn-text-tool');
     const btnTexteditCancel = document.getElementById('btn-textedit-cancel');
     const btnTexteditConfirm = document.getElementById('btn-textedit-confirm');
@@ -941,6 +943,49 @@
       goTo('result');
     });
     btnClose.addEventListener('click', () => goTo('edit'));
+
+    // Download the full_image section as a PNG at 650px wide.
+    const downloadFullImage = async () => {
+      if (typeof html2canvas === 'undefined') {
+        alert('다운로드 라이브러리가 로드되지 않았습니다.');
+        return;
+      }
+      const fullImage = document.querySelector('#page-result .full-image');
+      if (!fullImage) return;
+      btnDownload.disabled = true;
+      try {
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        const TARGET_WIDTH = 650;
+        const SOURCE_WIDTH = 393;
+        const canvas = await html2canvas(fullImage, {
+          scale: TARGET_WIDTH / SOURCE_WIDTH,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          logging: false,
+        });
+        await new Promise((resolve) => {
+          canvas.toBlob((blob) => {
+            if (!blob) { resolve(); return; }
+            const url = URL.createObjectURL(blob);
+            const ts = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `maxiedit_${ts}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            resolve();
+          }, 'image/png');
+        });
+      } catch (err) {
+        console.error(err);
+        alert('이미지 생성에 실패했습니다.');
+      } finally {
+        btnDownload.disabled = false;
+      }
+    };
+    btnDownload.addEventListener('click', downloadFullImage);
 
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;

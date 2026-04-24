@@ -17,7 +17,7 @@
 
     :root { --preview-scale: 0.4; }
 
-    /* phone-sized frame that contains all screens and overlays */
+    /* phone-sized frame that contains all pages and the textedit modal */
     .app-frame {
       position: relative;
       width: 393px;
@@ -28,7 +28,8 @@
       overflow: hidden;
     }
 
-    .screen {
+    /* pages — one visible at a time, toggled via [hidden] */
+    .page {
       position: absolute;
       top: 0;
       left: 0;
@@ -65,22 +66,20 @@
     .btn-camera { top: 98px; background: #aaa; }
     .btn-start  { top: 447px; background: #fffb8a; }
 
-    /* overlays — contained within .app-frame, not the viewport */
-    .overlay {
+    /* modal — only used by the textedit popup; sits above the current page */
+    .modal {
       position: absolute;
       top: 0;
       left: 0;
-      right: 0;
-      bottom: 0;
+      width: 100%;
+      height: 100%;
       background: rgba(0, 0, 0, 0.5);
       display: none;
       justify-content: center;
       align-items: center;
+      z-index: 1000;
     }
-    .overlay.is-open { display: flex !important; }
-    .overlay.edit { z-index: 100; }
-    .overlay.result { z-index: 1000; }
-    .overlay.textedit { z-index: 2000; }
+    .modal.is-open { display: flex !important; }
 
     /* 11_textedit modal */
     .textedit-modal {
@@ -557,14 +556,14 @@
 </head>
 <body>
   <div class="app-frame">
-  <main class="screen" data-name="00_home">
+  <section class="page" id="page-home" data-name="00_home">
     <h1 class="home-title">MaxiEdit</h1>
     <button class="btn-camera" type="button" data-name="btn_camera">사진찍기</button>
     <button class="btn-start" type="button" id="btn-start" data-name="btn_start">편집하기</button>
-  </main>
+  </section>
 
-  <!-- 02_edit overlay -->
-  <div class="overlay edit" id="edit-overlay" role="dialog" aria-modal="true" hidden>
+  <!-- 02_edit page -->
+  <section class="page" id="page-edit" hidden>
     <section class="edit" data-name="02_edit">
       <div class="edit-header">
         <button class="btn-icon" type="button" id="btn-edit-close" data-name="btn_close" aria-label="닫기">
@@ -607,10 +606,10 @@
         <button class="btn-next-main" type="button" id="btn-next" data-name="btn_next" disabled>다음 0/9</button>
       </div>
     </section>
-  </div>
+  </section>
 
-  <!-- 10_result overlay -->
-  <div class="overlay result" id="result-overlay" role="dialog" aria-modal="true" hidden>
+  <!-- 10_result page -->
+  <section class="page" id="page-result" hidden>
     <section class="result" data-name="10_result">
       <button class="btn-close" type="button" id="btn-close" data-name="btn_close" aria-label="뒤로">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
@@ -630,10 +629,10 @@
         <span class="btn-reset-label">텍스트</span>
       </button>
     </section>
-  </div>
+  </section>
 
-  <!-- 11_textedit overlay -->
-  <div class="overlay textedit" id="textedit-overlay" role="dialog" aria-modal="true" aria-label="텍스트 수정" hidden>
+  <!-- 11_textedit modal (only accessible from 10_result) -->
+  <div class="modal" id="textedit-overlay" role="dialog" aria-modal="true" aria-label="텍스트 수정" hidden>
     <div class="textedit-modal" data-name="11_textedit">
       <div class="textedit-list" id="textedit-list"></div>
       <div class="textedit-actions">
@@ -676,8 +675,9 @@
     ];
     const textLabels = [...TEXT_LABELS_DEFAULT];
 
-    const editOverlay = document.getElementById('edit-overlay');
-    const resultOverlay = document.getElementById('result-overlay');
+    const pageHome = document.getElementById('page-home');
+    const pageEdit = document.getElementById('page-edit');
+    const pageResult = document.getElementById('page-result');
     const texteditOverlay = document.getElementById('textedit-overlay');
     const btnStart = document.getElementById('btn-start');
     const btnEditClose = document.getElementById('btn-edit-close');
@@ -818,24 +818,34 @@
       btnResetTop.disabled = count === 0;
     };
 
-    // All overlays use this same open/close pattern so stacking stays correct.
-    const showOverlay = (el) => {
+    // Page navigation — only one page visible at a time.
+    const pages = { home: pageHome, edit: pageEdit, result: pageResult };
+    let currentPage = 'home';
+    const goTo = (name) => {
+      if (!pages[name]) return;
+      // Leaving the result page? Dismiss the textedit modal if it's up.
+      if (currentPage === 'result' && name !== 'result') hideModal(texteditOverlay);
+      Object.entries(pages).forEach(([k, el]) => {
+        if (k === name) el.removeAttribute('hidden');
+        else el.setAttribute('hidden', '');
+      });
+      currentPage = name;
+    };
+
+    // Modal helpers — only used by textedit.
+    const showModal = (el) => {
       el.removeAttribute('hidden');
       el.classList.add('is-open');
       el.style.display = 'flex';
     };
-    const hideOverlay = (el) => {
+    const hideModal = (el) => {
       el.classList.remove('is-open');
       el.style.display = '';
       el.setAttribute('hidden', '');
     };
-    const openEdit = () => showOverlay(editOverlay);
-    const closeEdit = () => hideOverlay(editOverlay);
-    const openResult = () => showOverlay(resultOverlay);
-    const closeResult = () => hideOverlay(resultOverlay);
 
-    btnStart.addEventListener('click', openEdit);
-    btnEditClose.addEventListener('click', closeEdit);
+    btnStart.addEventListener('click', () => goTo('edit'));
+    btnEditClose.addEventListener('click', () => goTo('home'));
     btnResetTop.addEventListener('click', () => {
       if (selected.length === 0) return;
       selected.length = 0;
@@ -843,17 +853,14 @@
     });
     btnNext.addEventListener('click', () => {
       if (selected.length === 0) return;
-      openResult();
+      goTo('result');
     });
-    btnClose.addEventListener('click', closeResult);
+    btnClose.addEventListener('click', () => goTo('edit'));
 
-    editOverlay.addEventListener('click', (e) => { if (e.target === editOverlay) closeEdit(); });
-    resultOverlay.addEventListener('click', (e) => { if (e.target === resultOverlay) closeResult(); });
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
+      // Only the textedit modal responds to Escape; pages have explicit nav.
       if (texteditOverlay.classList.contains('is-open')) closeTextedit();
-      else if (resultOverlay.classList.contains('is-open')) closeResult();
-      else if (editOverlay.classList.contains('is-open')) closeEdit();
     });
 
     document.querySelectorAll('.cat-tab').forEach((tab) => {
@@ -899,10 +906,10 @@
         row.appendChild(input);
         texteditList.appendChild(row);
       });
-      showOverlay(texteditOverlay);
+      showModal(texteditOverlay);
     };
 
-    const closeTextedit = () => hideOverlay(texteditOverlay);
+    const closeTextedit = () => hideModal(texteditOverlay);
 
     const confirmTextedit = () => {
       texteditList.querySelectorAll('.textedit-input').forEach((input) => {

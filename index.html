@@ -44,7 +44,7 @@
     /* 00_home */
     .home-title {
       position: absolute;
-      top: 14px;
+      top: 4px;
       left: 50%;
       transform: translateX(-50%);
       font-size: 34px;
@@ -65,8 +65,8 @@
       border: none;
       cursor: pointer;
     }
-    .btn-camera { top: 83px; background: #aaa; }
-    .btn-start  { top: 432px; background: #fffb8a; }
+    .btn-camera { top: 73px; background: #aaa; }
+    .btn-start  { top: 422px; background: #fffb8a; }
 
     /* modal — only used by the textedit popup; sits above the current page */
     .modal {
@@ -207,7 +207,7 @@
     }
     .edit-header {
       position: absolute;
-      top: 22px;
+      top: 12px;
       left: 0;
       right: 0;
       height: 35px;
@@ -250,7 +250,7 @@
     /* preview (full_image scaled, aspect ratio preserved) */
     .preview {
       position: absolute;
-      top: 79px;
+      top: 69px;
       left: 0;
       right: 0;
       height: calc(522px * var(--preview-scale));
@@ -278,7 +278,7 @@
     /* bottom_layer_imageList — tabs + picker grid */
     .bottom-layer-imagelist {
       position: absolute;
-      top: calc(79px + 522px * var(--preview-scale));
+      top: calc(69px + 522px * var(--preview-scale));
       left: 0;
       right: 0;
       bottom: 0;
@@ -544,7 +544,7 @@
     }
     .btn-close, .btn-download {
       position: absolute;
-      top: 22px;
+      top: 12px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -590,7 +590,7 @@
     }
     .result .full-image {
       position: absolute;
-      top: 79px;
+      top: 69px;
       left: 0;
     }
     .result-grid {
@@ -658,9 +658,8 @@
 
     .btn-reset {
       position: absolute;
-      /* Anchored below full_image so the gap stays constant regardless of viewport.
-         full-image top:79 + height:522 = bottom:601; 54px gap → top:655. */
-      top: 655px;
+      /* Anchored to the bottom so it stays visible on viewports shortened by iOS chrome. */
+      bottom: 30px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
@@ -690,10 +689,10 @@
     .single { position: relative; width: 100%; height: 100%; background: #000; overflow: hidden; color: #fff; }
     .split-track {
       position: absolute;
-      top: 79px;
+      top: 60px;
       left: 0;
       right: 0;
-      height: 560px;
+      bottom: 130px;
       display: flex;
       overflow-x: auto;
       overflow-y: hidden;
@@ -752,11 +751,12 @@
       position: absolute;
       left: 0;
       right: 0;
-      bottom: 130px;
+      bottom: 95px;
       display: flex;
       justify-content: center;
       gap: 8px;
     }
+    .indicator:empty { display: none; }
     .indicator-dot {
       width: 8px;
       height: 8px;
@@ -771,7 +771,7 @@
       position: absolute;
       left: 0;
       right: 0;
-      bottom: 40px;
+      bottom: 30px;
       display: flex;
       justify-content: center;
       gap: 60px;
@@ -945,6 +945,8 @@
         <div class="textarea" id="result-textarea"></div>
       </div>
 
+      <div class="indicator" id="result-indicator"></div>
+
       <button class="btn-reset" type="button" id="btn-text-tool" data-name="btn_text">
         <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
         <span class="btn-reset-label">텍스트</span>
@@ -993,6 +995,26 @@
         영상으로 저장 (MP4)
       </button>
       <button type="button" id="btn-download-cancel">취소</button>
+    </div>
+  </div>
+
+  <!-- single-slide download chooser (PNG / MP4 / GIF) -->
+  <div class="modal" id="single-download-modal" role="dialog" aria-modal="true" aria-label="다운로드 형식" hidden>
+    <div class="download-card">
+      <h3>어떻게 저장할까요?</h3>
+      <button type="button" id="btn-sd-png">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        사진으로 저장 (PNG)
+      </button>
+      <button type="button" id="btn-sd-mp4">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        영상으로 저장 (MP4)
+      </button>
+      <button type="button" id="btn-sd-gif">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 9v6"/><path d="M14 9h-3v6h3"/><path d="M17 9h3"/></svg>
+        GIF로 저장
+      </button>
+      <button type="button" id="btn-sd-cancel">취소</button>
     </div>
   </div>
 
@@ -1166,6 +1188,12 @@
     const btnSingleDownload = document.getElementById('btn-single-download');
     const btnTextSingle = document.getElementById('btn-text-single');
     const btnFlip = document.getElementById('btn-flip');
+    const resultIndicator = document.getElementById('result-indicator');
+    const singleDownloadModal = document.getElementById('single-download-modal');
+    const btnSdPng = document.getElementById('btn-sd-png');
+    const btnSdMp4 = document.getElementById('btn-sd-mp4');
+    const btnSdGif = document.getElementById('btn-sd-gif');
+    const btnSdCancel = document.getElementById('btn-sd-cancel');
     const pickerGrid = document.getElementById('picker-grid');
     const photoInput = document.getElementById('photo-input');
     const previewGridEl = document.getElementById('preview-grid');
@@ -1374,6 +1402,9 @@
       btnNext.textContent = `다음 ${count}/${MAX_SELECT}`;
       btnNext.disabled = count === 0;
       btnResetTop.disabled = count === 0;
+
+      // Keep result page indicator in sync with current selection count
+      renderResultIndicator();
     };
 
     // Revoke the object URLs backing a photos[] entry.
@@ -1454,6 +1485,26 @@
       }
       buildPicker();
       render();
+      renderResultIndicator();
+    };
+
+    // Result-page indicator: 1 dot for full_image + 1 per selected slot.
+    const renderResultIndicator = () => {
+      if (!resultIndicator) return;
+      resultIndicator.innerHTML = '';
+      if (selected.length === 0) return;
+      const total = 1 + selected.length;
+      for (let i = 0; i < total; i++) {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'indicator-dot' + (i === 0 ? ' is-active' : '');
+        dot.setAttribute('aria-label', i === 0 ? '전체 보기' : `${i}번째 보기`);
+        dot.addEventListener('click', () => {
+          if (i === 0) return;
+          openSingle(i - 1);
+        });
+        resultIndicator.appendChild(dot);
+      }
     };
     photoInput.addEventListener('change', (e) => {
       const mode = e.target.dataset.mode;
@@ -2056,14 +2107,102 @@
     });
     btnTextSingle.addEventListener('click', () => openTextedit(currentSingleIdx));
 
-    // Single view download — PNG of the split composition.
+    // --- single-slide export helpers ---
+
+    // Paint the split-slide layout (image/video half + text half, respecting flip) onto
+    // an arbitrary 2D canvas context. Used by MP4 and GIF export paths.
+    const drawSingleFrame = (ctx, w, h, slide) => {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, w, h);
+      const halfH = Math.floor(h / 2);
+      const imgY = slide.flipped ? halfH : 0;
+      const textY = slide.flipped ? 0 : halfH;
+      if (slide.type === 'video' && slide.videoEl) {
+        drawImageCover(ctx, slide.videoEl, 0, imgY, w, halfH);
+      } else if (slide.type === 'image' && slide.img) {
+        drawImageCover(ctx, slide.img, 0, imgY, w, halfH);
+      } else {
+        ctx.fillStyle = '#ffefb7';
+        ctx.fillRect(0, imgY, w, halfH);
+      }
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, textY, w, halfH);
+      ctx.fillStyle = '#000';
+      const fontSize = Math.round(w * 0.045);
+      ctx.font = `700 ${fontSize}px "Nanum Myeongjo", serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(slide.text || '', w / 2, textY + halfH / 2);
+    };
+
+    // Build a slide descriptor (image or video element) for the current single slot.
+    const prepareSingleSlideForExport = async () => {
+      const photoIdx = selected[currentSingleIdx];
+      const photo = photos[photoIdx];
+      const text = textLabels[currentSingleIdx] || '';
+      const slideEl = splitTrack.children[currentSingleIdx];
+      const flipped = slideEl ? slideEl.classList.contains('is-flipped') : false;
+      if (!photo) return { type: 'empty', text, flipped, cleanup: () => {} };
+      if (photo.type === 'image') {
+        const img = new Image();
+        img.src = photo.url;
+        try { await img.decode(); } catch {}
+        return { type: 'image', img, text, flipped, cleanup: () => {} };
+      }
+      const v = document.createElement('video');
+      v.src = photo.originalUrl;
+      v.muted = true;
+      v.defaultMuted = true;
+      v.playsInline = true;
+      v.setAttribute('muted', '');
+      v.setAttribute('playsinline', '');
+      v.setAttribute('webkit-playsinline', '');
+      v.preload = 'auto';
+      v.loop = true;
+      v.style.cssText = 'position:fixed;top:0;left:0;width:64px;height:64px;opacity:0.001;pointer-events:none;z-index:-9999;';
+      document.body.appendChild(v);
+      await new Promise((res) => {
+        const done = () => res();
+        v.addEventListener('loadeddata', done, { once: true });
+        v.addEventListener('error', done, { once: true });
+        setTimeout(done, 3000);
+      });
+      v.currentTime = 0;
+      try { await v.play(); } catch {}
+      return {
+        type: 'video',
+        videoEl: v,
+        text,
+        flipped,
+        cleanup: () => {
+          try { v.pause(); } catch {}
+          if (v.parentNode) v.parentNode.removeChild(v);
+        },
+      };
+    };
+
+    // Lazy-load gif.js when the GIF option is first used.
+    let gifLoadPromise = null;
+    const loadGifLib = () => {
+      if (gifLoadPromise) return gifLoadPromise;
+      gifLoadPromise = new Promise((resolve, reject) => {
+        if (window.GIF) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('gif.js failed to load'));
+        document.head.appendChild(s);
+      });
+      return gifLoadPromise;
+    };
+
+    // Single PNG — just snapshot the currently visible slide DOM.
     const downloadSinglePng = async () => {
       btnSingleDownload.disabled = true;
       loadingBarEl.removeAttribute('hidden');
       try {
         if (typeof html2canvas === 'undefined') throw new Error('html2canvas unavailable');
         if (document.fonts && document.fonts.ready) await document.fonts.ready;
-        // Capture only the currently visible slide (not the whole scroll track).
         const node = splitTrack.children[currentSingleIdx];
         if (!node) throw new Error('active slide not found');
         const canvas = await html2canvas(node, {
@@ -2085,7 +2224,148 @@
         btnSingleDownload.disabled = false;
       }
     };
-    btnSingleDownload.addEventListener('click', downloadSinglePng);
+
+    // Single MP4 — render the split layout to a canvas for 2s, record via
+    // MediaRecorder, transcode to mp4 if native path isn't mp4.
+    const downloadSingleMp4 = async () => {
+      btnSingleDownload.disabled = true;
+      loadingBarEl.removeAttribute('hidden');
+      try {
+        if (typeof MediaRecorder === 'undefined' || !HTMLCanvasElement.prototype.captureStream) {
+          throw new Error('MediaRecorder not supported');
+        }
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        const slide = await prepareSingleSlideForExport();
+        const mime = pickRecorderMime();
+        if (!mime) { slide.cleanup(); throw new Error('no codec'); }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 650;
+        canvas.height = 650;
+        const ctx = canvas.getContext('2d');
+        drawSingleFrame(ctx, canvas.width, canvas.height, slide);
+        await new Promise((r) => requestAnimationFrame(r));
+        drawSingleFrame(ctx, canvas.width, canvas.height, slide);
+
+        const stream = canvas.captureStream(30);
+        const recorder = new MediaRecorder(stream, { mimeType: mime });
+        const chunks = [];
+        recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+        recorder.start();
+        const startT = performance.now();
+
+        const rawBlob = await new Promise((resolve, reject) => {
+          recorder.onerror = (e) => { slide.cleanup(); reject(new Error('recorder')); };
+          recorder.onstop = () => { slide.cleanup(); resolve(new Blob(chunks, { type: mime })); };
+          const draw = () => {
+            const elapsed = (performance.now() - startT) / 1000;
+            if (slide.type === 'video' && slide.videoEl.currentTime >= VIDEO_CLIP_SECONDS) {
+              slide.videoEl.currentTime = 0;
+            }
+            drawSingleFrame(ctx, canvas.width, canvas.height, slide);
+            if (elapsed < VIDEO_CLIP_SECONDS) requestAnimationFrame(draw);
+            else { try { recorder.stop(); } catch (err) { reject(err); } }
+          };
+          requestAnimationFrame(draw);
+        });
+
+        let finalBlob = rawBlob;
+        if (!mime.startsWith('video/mp4')) {
+          showToast('MP4 변환 중…');
+          finalBlob = await transcodeToMp4(rawBlob, mime);
+        }
+        const ok = await saveBlob(finalBlob, `maxiedit_single_${tsNow()}.mp4`);
+        if (ok) showToast('저장 완료');
+      } catch (err) {
+        console.error(err);
+        alert('영상 생성에 실패했습니다.\n' + (err.message || err));
+      } finally {
+        loadingBarEl.setAttribute('hidden', '');
+        btnSingleDownload.disabled = false;
+      }
+    };
+
+    // Single GIF — encode 2s of frames via gif.js.
+    const downloadSingleGif = async () => {
+      btnSingleDownload.disabled = true;
+      loadingBarEl.removeAttribute('hidden');
+      try {
+        showToast('GIF 인코더 준비…');
+        await loadGifLib();
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        const slide = await prepareSingleSlideForExport();
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 500;
+        canvas.height = 500;
+        const ctx = canvas.getContext('2d');
+        const gif = new window.GIF({
+          workers: 2,
+          quality: 10,
+          width: canvas.width,
+          height: canvas.height,
+          workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
+        });
+        const FRAMES = 20;
+        const DELAY = Math.round(VIDEO_CLIP_SECONDS * 1000 / FRAMES);
+        for (let i = 0; i < FRAMES; i++) {
+          if (slide.type === 'video' && slide.videoEl) {
+            const t = (i / FRAMES) * VIDEO_CLIP_SECONDS;
+            slide.videoEl.currentTime = t;
+            await new Promise((res) => {
+              const ok = () => res();
+              slide.videoEl.addEventListener('seeked', ok, { once: true });
+              setTimeout(ok, 300);
+            });
+          }
+          drawSingleFrame(ctx, canvas.width, canvas.height, slide);
+          gif.addFrame(canvas, { delay: DELAY, copy: true });
+        }
+        const blob = await new Promise((resolve, reject) => {
+          gif.on('finished', (b) => resolve(b));
+          gif.on('abort', () => reject(new Error('gif aborted')));
+          gif.render();
+        });
+        slide.cleanup();
+        const ok = await saveBlob(blob, `maxiedit_single_${tsNow()}.gif`);
+        if (ok) showToast('저장 완료');
+      } catch (err) {
+        console.error(err);
+        alert('GIF 생성에 실패했습니다.\n' + (err.message || err));
+      } finally {
+        loadingBarEl.setAttribute('hidden', '');
+        btnSingleDownload.disabled = false;
+      }
+    };
+
+    // Single download button → show format chooser modal.
+    btnSingleDownload.addEventListener('click', () => {
+      if (selected.length === 0) return;
+      showModal(singleDownloadModal);
+    });
+    btnSdPng.addEventListener('click', () => { hideModal(singleDownloadModal); downloadSinglePng(); });
+    btnSdMp4.addEventListener('click', () => { hideModal(singleDownloadModal); downloadSingleMp4(); });
+    btnSdGif.addEventListener('click', () => { hideModal(singleDownloadModal); downloadSingleGif(); });
+    btnSdCancel.addEventListener('click', () => hideModal(singleDownloadModal));
+    singleDownloadModal.addEventListener('click', (e) => {
+      if (e.target === singleDownloadModal) hideModal(singleDownloadModal);
+    });
+
+    // Swipe on 10_result → jump to single view (slot 0).
+    const resultSection = document.querySelector('#page-result .result');
+    let resTouchStartX = 0;
+    let resTouchStartY = 0;
+    resultSection.addEventListener('touchstart', (e) => {
+      resTouchStartX = e.touches[0].clientX;
+      resTouchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    resultSection.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - resTouchStartX;
+      const dy = e.changedTouches[0].clientY - resTouchStartY;
+      if (Math.abs(dy) > Math.abs(dx)) return;
+      if (Math.abs(dx) < 50) return;
+      if (dx < 0 && selected.length > 0) openSingle(0);
+    }, { passive: true });
 
     btnTextTool.addEventListener('click', () => openTextedit());
     btnTexteditCancel.addEventListener('click', closeTextedit);

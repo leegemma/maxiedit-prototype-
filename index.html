@@ -25,6 +25,7 @@
       height: 852px;
       max-width: 100vw;
       max-height: 100vh;
+      max-height: 100dvh; /* modern browsers: follow the visible viewport so iOS Safari chrome doesn't cover bottom bar */
       background: #000;
       overflow: hidden;
     }
@@ -1162,8 +1163,8 @@
     };
 
     const render = () => {
-      // picker check icons
-      pickerGrid.querySelectorAll('.photo-item').forEach((item) => {
+      // picker check icons — skip the trailing "+" tile which has no .icon-check
+      pickerGrid.querySelectorAll('.photo-item:not(.photo-item-add)').forEach((item) => {
         const idx = Number(item.dataset.index);
         const selPos = selected.indexOf(idx);
         const icon = item.querySelector('.icon-check');

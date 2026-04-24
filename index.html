@@ -686,6 +686,103 @@
     }
     .btn-reset-label { font-size: 14px; color: #fff; }
 
+    /* 12_result_single — 2-panel (image + text) view for one selected photo */
+    .single { position: relative; width: 100%; height: 100%; background: #000; overflow: hidden; color: #fff; }
+    .split-view {
+      position: absolute;
+      top: 79px;
+      left: 0;
+      right: 0;
+      height: 560px;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      overflow: hidden;
+    }
+    .split-view.is-flipped { flex-direction: column-reverse; }
+    .split-image {
+      flex: 1 1 0;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+      background-color: #ffefb7;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    .split-image > video {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .split-text {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      font-family: 'Nanum Myeongjo', serif;
+      font-weight: 700;
+      font-size: 18px;
+      color: #000;
+      background: #fff;
+      text-align: center;
+      word-break: keep-all;
+    }
+    .indicator {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 130px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+    .indicator-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #555;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+    .indicator-dot.is-active { background: #fff; }
+    .single-controls {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 40px;
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+    }
+    .btn-text-single, .btn-flip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .btn-text-single svg, .btn-flip svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
     /* loading bar — shown during photo/video processing */
     .loading-bar {
       position: absolute;
@@ -837,6 +934,37 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
         <span class="btn-reset-label">텍스트</span>
       </button>
+    </section>
+  </section>
+
+  <!-- 12_result_single page — 2-panel split view per slot -->
+  <section class="page" id="page-single" hidden>
+    <section class="single" data-name="12_result_single">
+      <button class="btn-close" type="button" id="btn-single-close" data-name="btn_close" aria-label="뒤로">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+      </button>
+      <button class="btn-download" type="button" id="btn-single-download" data-name="btn_download">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+        <span>다운로드</span>
+      </button>
+
+      <div class="split-view" id="split-view">
+        <div class="split-image" id="split-image"></div>
+        <div class="split-text" id="split-text"></div>
+      </div>
+
+      <div class="indicator" id="single-indicator"></div>
+
+      <div class="single-controls">
+        <button class="btn-text-single" type="button" id="btn-text-single" data-name="btn_text">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
+          <span>텍스트</span>
+        </button>
+        <button class="btn-flip" type="button" id="btn-flip" data-name="btn_flip">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+          <span>뒤집기</span>
+        </button>
+      </div>
     </section>
   </section>
 
@@ -1018,6 +1146,16 @@
     const btnTextTool = document.getElementById('btn-text-tool');
     const btnTexteditCancel = document.getElementById('btn-textedit-cancel');
     const btnTexteditConfirm = document.getElementById('btn-textedit-confirm');
+    // 12_result_single page refs
+    const pageSingle = document.getElementById('page-single');
+    const splitView = document.getElementById('split-view');
+    const splitImage = document.getElementById('split-image');
+    const splitText = document.getElementById('split-text');
+    const singleIndicator = document.getElementById('single-indicator');
+    const btnSingleClose = document.getElementById('btn-single-close');
+    const btnSingleDownload = document.getElementById('btn-single-download');
+    const btnTextSingle = document.getElementById('btn-text-single');
+    const btnFlip = document.getElementById('btn-flip');
     const pickerGrid = document.getElementById('picker-grid');
     const photoInput = document.getElementById('photo-input');
     const previewGridEl = document.getElementById('preview-grid');
@@ -1031,7 +1169,7 @@
 
     const selected = [];
 
-    const buildResultStyleGrid = (target) => {
+    const buildResultStyleGrid = (target, onCellClick) => {
       target.innerHTML = '';
       for (let r = 0; r < 3; r++) {
         const row = document.createElement('div');
@@ -1040,6 +1178,7 @@
           const slotIndex = r * 3 + c;
           const cell = document.createElement('div');
           cell.className = 'result-cell';
+          cell.dataset.slot = String(slotIndex);
           const section = document.createElement('div');
           section.className = 'p-section';
           section.dataset.slot = String(slotIndex);
@@ -1049,6 +1188,10 @@
           title.textContent = `(${slotIndex + 1})`;
           cell.appendChild(section);
           cell.appendChild(title);
+          if (onCellClick) {
+            cell.style.cursor = 'pointer';
+            cell.addEventListener('click', () => onCellClick(slotIndex));
+          }
           row.appendChild(cell);
         }
         target.appendChild(row);
@@ -1310,7 +1453,7 @@
     });
 
     // Page navigation — only one page visible at a time.
-    const pages = { home: pageHome, edit: pageEdit, result: pageResult };
+    const pages = { home: pageHome, edit: pageEdit, result: pageResult, single: pageSingle };
     let currentPage = 'home';
     const goTo = (name) => {
       if (!pages[name]) return;
@@ -1755,9 +1898,11 @@
       });
     };
 
-    const openTextedit = () => {
+    // filterIdx: null = all 9 rows, otherwise just that single row.
+    const openTextedit = (filterIdx = null) => {
       texteditList.innerHTML = '';
       textLabels.forEach((label, i) => {
+        if (filterIdx !== null && i !== filterIdx) return;
         const row = document.createElement('div');
         row.className = 'textedit-row';
         const num = document.createElement('span');
@@ -1786,10 +1931,129 @@
         textLabels[idx] = input.value;
       });
       renderTextareas();
+      if (currentPage === 'single') renderSingleView();
       closeTextedit();
     };
 
-    btnTextTool.addEventListener('click', openTextedit);
+    // 12_result_single — state + rendering
+    let currentSingleIdx = 0;
+    let singleFlipped = false;
+
+    const openSingle = (slotIdx) => {
+      if (selected.length === 0) return;
+      if (slotIdx === undefined || slotIdx < 0 || slotIdx >= selected.length) slotIdx = 0;
+      currentSingleIdx = slotIdx;
+      singleFlipped = false;
+      splitView.classList.remove('is-flipped');
+      goTo('single');
+      renderSingleView();
+    };
+
+    const renderSingleView = () => {
+      if (selected.length === 0) return;
+      if (currentSingleIdx >= selected.length) currentSingleIdx = selected.length - 1;
+
+      const photoIdx = selected[currentSingleIdx];
+      const photo = photos[photoIdx];
+
+      // Media pane — clear any prior <video> and rebuild
+      const prior = splitImage.querySelector('video');
+      if (prior) { try { prior.pause(); } catch {} prior.remove(); }
+      splitImage.style.backgroundImage = '';
+      splitImage.style.backgroundColor = '#ffefb7';
+      if (photo) {
+        if (photo.type === 'video' && photo.originalUrl) {
+          const v = document.createElement('video');
+          v.src = photo.originalUrl;
+          v.muted = true;
+          v.defaultMuted = true;
+          v.playsInline = true;
+          v.setAttribute('muted', '');
+          v.setAttribute('playsinline', '');
+          v.setAttribute('webkit-playsinline', '');
+          v.autoplay = true;
+          v.loop = true;
+          v.addEventListener('timeupdate', () => {
+            if (v.currentTime >= VIDEO_CLIP_SECONDS) v.currentTime = 0;
+          });
+          splitImage.appendChild(v);
+          v.play().catch(() => {});
+        } else {
+          splitImage.style.backgroundImage = `url("${photo.url}")`;
+          splitImage.style.backgroundColor = '';
+        }
+      }
+
+      // Text pane
+      splitText.textContent = textLabels[currentSingleIdx] || '';
+
+      // Indicator dots
+      singleIndicator.innerHTML = '';
+      selected.forEach((_, i) => {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'indicator-dot' + (i === currentSingleIdx ? ' is-active' : '');
+        dot.setAttribute('aria-label', `${i + 1}번째`);
+        dot.addEventListener('click', () => {
+          currentSingleIdx = i;
+          renderSingleView();
+        });
+        singleIndicator.appendChild(dot);
+      });
+    };
+
+    // Swipe navigation across slots in single view
+    let singleTouchStartX = 0;
+    splitView.addEventListener('touchstart', (e) => {
+      singleTouchStartX = e.touches[0].clientX;
+    }, { passive: true });
+    splitView.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - singleTouchStartX;
+      if (Math.abs(dx) < 50) return;
+      if (dx > 0 && currentSingleIdx > 0) currentSingleIdx--;
+      else if (dx < 0 && currentSingleIdx < selected.length - 1) currentSingleIdx++;
+      else return;
+      renderSingleView();
+    });
+
+    btnSingleClose.addEventListener('click', () => goTo('result'));
+    btnFlip.addEventListener('click', () => {
+      singleFlipped = !singleFlipped;
+      splitView.classList.toggle('is-flipped', singleFlipped);
+    });
+    btnTextSingle.addEventListener('click', () => openTextedit(currentSingleIdx));
+
+    // Single view download — PNG of the split composition.
+    const downloadSinglePng = async () => {
+      btnSingleDownload.disabled = true;
+      loadingBarEl.removeAttribute('hidden');
+      try {
+        if (typeof html2canvas === 'undefined') throw new Error('html2canvas unavailable');
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        const node = document.querySelector('#page-single .split-view');
+        if (!node) throw new Error('split-view not found');
+        const canvas = await html2canvas(node, {
+          scale: SCALE_OUT,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          logging: false,
+        });
+        const blob = await new Promise((res, rej) => {
+          canvas.toBlob((b) => b ? res(b) : rej(new Error('toBlob failed')), 'image/png');
+        });
+        const ok = await saveBlob(blob, `maxiedit_single_${tsNow()}.png`);
+        if (ok) showToast('저장 완료');
+      } catch (err) {
+        console.error(err);
+        alert('이미지 생성에 실패했습니다.');
+      } finally {
+        loadingBarEl.setAttribute('hidden', '');
+        btnSingleDownload.disabled = false;
+      }
+    };
+    btnSingleDownload.addEventListener('click', downloadSinglePng);
+
+    btnTextTool.addEventListener('click', () => openTextedit());
     btnTexteditCancel.addEventListener('click', closeTextedit);
     btnTexteditConfirm.addEventListener('click', confirmTextedit);
     texteditOverlay.addEventListener('click', (e) => {
@@ -1797,7 +2061,10 @@
     });
 
     buildResultStyleGrid(previewGridEl);
-    buildResultStyleGrid(resultGridEl);
+    buildResultStyleGrid(resultGridEl, (slotIdx) => {
+      // Only open single view when this slot has a photo/video.
+      if (selected[slotIdx] !== undefined) openSingle(slotIdx);
+    });
     buildPicker();
     renderTextareas();
     render();

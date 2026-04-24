@@ -917,8 +917,20 @@
       el.setAttribute('hidden', '');
     };
 
+    // Full reset — wipe loaded photos and selections (e.g. on leaving edit → home).
+    const resetEditState = () => {
+      photos.forEach((p) => URL.revokeObjectURL(p.url));
+      photos.length = 0;
+      selected.length = 0;
+      buildPicker();
+      render();
+    };
+
     btnStart.addEventListener('click', () => goTo('edit'));
-    btnEditClose.addEventListener('click', () => goTo('home'));
+    btnEditClose.addEventListener('click', () => {
+      resetEditState();
+      goTo('home');
+    });
     btnResetTop.addEventListener('click', () => {
       if (selected.length === 0) return;
       selected.length = 0;

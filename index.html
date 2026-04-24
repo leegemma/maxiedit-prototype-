@@ -659,7 +659,8 @@
 
     .btn-reset {
       position: absolute;
-      top: 670px;
+      /* Bottom-anchored so it stays visible inside 100dvh on devices with chrome */
+      bottom: 40px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
@@ -894,6 +895,9 @@
 
     // Clip every selected video at the very start — length used as the final slot.
     const VIDEO_CLIP_SECONDS = 2;
+    // Hard limits applied before we even try to thumbnail a video.
+    const MAX_VIDEO_SIZE_BYTES = 1 * 1024 * 1024 * 1024; // 1 GB
+    const MAX_VIDEO_DURATION_S = 25 * 60; // 25 min
 
     // Format seconds as M:SS for the picker duration badge.
     const formatDuration = (seconds) => {
@@ -1249,11 +1253,20 @@
       loadingBarEl.removeAttribute('hidden');
       let thumbFailures = [];
       let firstError = '';
+      let oversized = 0;
+      let toolong = 0;
       try {
         for (const f of files) {
           if (isVideoFile(f)) {
+            if (f.size > MAX_VIDEO_SIZE_BYTES) { oversized++; continue; }
             try {
               const { thumbUrl, originalUrl, duration } = await generateVideoThumbnail(f);
+              if (duration && duration > MAX_VIDEO_DURATION_S) {
+                URL.revokeObjectURL(thumbUrl);
+                URL.revokeObjectURL(originalUrl);
+                toolong++;
+                continue;
+              }
               photos.push({ url: thumbUrl, originalUrl, name: f.name, type: 'video', duration });
             } catch (err) {
               console.warn('video thumbnail failed for', f.name, err);
@@ -1281,6 +1294,8 @@
         loadingBarEl.setAttribute('hidden', '');
       }
 
+      if (oversized) alert('너무 영상이 커서 넣을 수 없습니다.');
+      if (toolong) alert('너무 긴 영상은 넣을 수 없습니다.');
       if (thumbFailures.length) {
         showToast(`썸네일 실패 ${thumbFailures.length}개 · ${firstError.slice(0, 40)}`);
       }
@@ -1502,7 +1517,60 @@
       return candidates.find((m) => { try { return MediaRecorder.isTypeSupported(m); } catch { return false; } }) || null;
     };
 
-    // Render an MP4 (or webm fallback) of the full_image playing video slots for 2s.
+    // Lazy-load ffmpeg.wasm (single-threaded core) only when we need to transcode.
+    let ffmpegLoadPromise = null;
+    const loadFFmpeg = () => {
+      if (ffmpegLoadPromise) return ffmpegLoadPromise;
+      ffmpegLoadPromise = (async () => {
+        const loadScript = (src) => new Promise((res, rej) => {
+          const s = document.createElement('script');
+          s.src = src;
+          s.crossOrigin = 'anonymous';
+          s.onload = res;
+          s.onerror = () => rej(new Error('script load failed: ' + src));
+          document.head.appendChild(s);
+        });
+        if (!window.FFmpegWASM) {
+          await loadScript('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
+        }
+        if (!window.FFmpegUtil) {
+          await loadScript('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js');
+        }
+        const ff = new window.FFmpegWASM.FFmpeg();
+        await ff.load({
+          coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+          wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm',
+        });
+        return ff;
+      })();
+      return ffmpegLoadPromise;
+    };
+
+    // Transcode arbitrary MediaRecorder output to H.264 MP4 with no audio track.
+    const transcodeToMp4 = async (srcBlob, srcMime) => {
+      const ff = await loadFFmpeg();
+      const { fetchFile } = window.FFmpegUtil;
+      const srcExt = (srcMime && srcMime.includes('webm')) ? 'webm'
+                    : (srcMime && srcMime.includes('mp4')) ? 'mp4'
+                    : 'bin';
+      const inputName = `in.${srcExt}`;
+      await ff.writeFile(inputName, await fetchFile(srcBlob));
+      // -an drops any audio the recorder picked up; -pix_fmt yuv420p for max
+      // compatibility; -movflags faststart moves moov atom to the start so the
+      // Photos app can scrub without having to download the whole file.
+      await ff.exec(['-i', inputName, '-c:v', 'libx264', '-preset', 'veryfast',
+                     '-pix_fmt', 'yuv420p', '-movflags', 'faststart', '-an',
+                     'out.mp4']);
+      const data = await ff.readFile('out.mp4');
+      try { await ff.deleteFile(inputName); } catch {}
+      try { await ff.deleteFile('out.mp4'); } catch {}
+      return new Blob([data.buffer], { type: 'video/mp4' });
+    };
+
+    // Render an MP4 (or webm fallback, later transcoded) of the full_image
+    // playing video slots for VIDEO_CLIP_SECONDS.
+    // Output is always silent — canvas.captureStream has no audio track, and the
+    // ffmpeg fallback also drops audio with -an.
     const captureMp4 = async () => {
       if (typeof MediaRecorder === 'undefined' || !HTMLCanvasElement.prototype.captureStream) {
         throw new Error('MediaRecorder/captureStream not supported');
@@ -1554,7 +1622,11 @@
       canvas.width = TARGET_WIDTH;
       canvas.height = OUTPUT_HEIGHT;
       const ctx = canvas.getContext('2d');
-      // Draw an initial frame before starting the recorder so chunk 0 isn't blank.
+      // Draw the first frame (with text overlay) BEFORE the recorder starts so
+      // chunk 0 is never blank. Draw twice across two frames to make sure every
+      // layer — including the text — is composited before capture begins.
+      drawFullImageFrame(ctx, canvas.width, canvas.height, slots);
+      await new Promise((r) => requestAnimationFrame(r));
       drawFullImageFrame(ctx, canvas.width, canvas.height, slots);
 
       const stream = canvas.captureStream(30);
@@ -1621,8 +1693,14 @@
       loadingBarEl.removeAttribute('hidden');
       try {
         const { blob, mime } = await captureMp4();
-        const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
-        const ok = await saveBlob(blob, `maxiedit_${tsNow()}.${ext}`);
+        let finalBlob = blob;
+        // Force an actual MP4 container. If MediaRecorder already gave us mp4
+        // we pass through; otherwise transcode via ffmpeg.wasm.
+        if (!mime || !mime.startsWith('video/mp4')) {
+          showToast('MP4 변환 중…');
+          finalBlob = await transcodeToMp4(blob, mime);
+        }
+        const ok = await saveBlob(finalBlob, `maxiedit_${tsNow()}.mp4`);
         if (ok) showToast('저장 완료');
       } catch (err) {
         console.error(err);

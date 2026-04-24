@@ -709,13 +709,15 @@
       scroll-snap-stop: always;
       display: flex;
       flex-direction: column;
-      background: #fff;
+      background: #000;
       overflow: hidden;
       min-width: 0;
+      padding: 0 40px;          /* side padding shrinks the visible split area */
+      box-sizing: border-box;
     }
     .split-slide.is-flipped { flex-direction: column-reverse; }
     .split-image {
-      flex: 1 1 0;
+      flex: 0 0 50%;            /* exact 5:5 vertical split */
       min-height: 0;
       position: relative;
       overflow: hidden;
@@ -733,7 +735,7 @@
       display: block;
     }
     .split-text {
-      flex: 1 1 0;
+      flex: 0 0 50%;            /* exact 5:5 vertical split */
       min-height: 0;
       display: flex;
       align-items: center;
@@ -746,6 +748,7 @@
       background: #fff;
       text-align: center;
       word-break: keep-all;
+      box-sizing: border-box;
     }
     .indicator {
       position: absolute;
@@ -776,11 +779,14 @@
       justify-content: center;
       gap: 60px;
     }
+    /* Matches .btn-reset exactly so both result footers align vertically */
     .btn-text-single, .btn-flip {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px 20px;
       background: transparent;
       border: none;
       color: #fff;
@@ -1010,10 +1016,6 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
         영상으로 저장 (MP4)
       </button>
-      <button type="button" id="btn-sd-gif">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 9v6"/><path d="M14 9h-3v6h3"/><path d="M17 9h3"/></svg>
-        GIF로 저장
-      </button>
       <button type="button" id="btn-sd-cancel">취소</button>
     </div>
   </div>
@@ -1192,7 +1194,6 @@
     const singleDownloadModal = document.getElementById('single-download-modal');
     const btnSdPng = document.getElementById('btn-sd-png');
     const btnSdMp4 = document.getElementById('btn-sd-mp4');
-    const btnSdGif = document.getElementById('btn-sd-gif');
     const btnSdCancel = document.getElementById('btn-sd-cancel');
     const pickerGrid = document.getElementById('picker-grid');
     const photoInput = document.getElementById('photo-input');
@@ -2053,6 +2054,13 @@
 
     const renderSingleIndicator = () => {
       singleIndicator.innerHTML = '';
+      // Leftmost dot mirrors 10_result's indicator — tapping it returns to the full view.
+      const backDot = document.createElement('button');
+      backDot.type = 'button';
+      backDot.className = 'indicator-dot';
+      backDot.setAttribute('aria-label', '전체 보기로');
+      backDot.addEventListener('click', () => goTo('result'));
+      singleIndicator.appendChild(backDot);
       selected.forEach((_, i) => {
         const dot = document.createElement('button');
         dot.type = 'button';
@@ -2181,21 +2189,6 @@
       };
     };
 
-    // Lazy-load gif.js when the GIF option is first used.
-    let gifLoadPromise = null;
-    const loadGifLib = () => {
-      if (gifLoadPromise) return gifLoadPromise;
-      gifLoadPromise = new Promise((resolve, reject) => {
-        if (window.GIF) { resolve(); return; }
-        const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
-        s.onload = () => resolve();
-        s.onerror = () => reject(new Error('gif.js failed to load'));
-        document.head.appendChild(s);
-      });
-      return gifLoadPromise;
-    };
-
     // Single PNG — just snapshot the currently visible slide DOM.
     const downloadSinglePng = async () => {
       btnSingleDownload.disabled = true;
@@ -2285,59 +2278,6 @@
       }
     };
 
-    // Single GIF — encode 2s of frames via gif.js.
-    const downloadSingleGif = async () => {
-      btnSingleDownload.disabled = true;
-      loadingBarEl.removeAttribute('hidden');
-      try {
-        showToast('GIF 인코더 준비…');
-        await loadGifLib();
-        if (document.fonts && document.fonts.ready) await document.fonts.ready;
-        const slide = await prepareSingleSlideForExport();
-
-        const canvas = document.createElement('canvas');
-        canvas.width = 500;
-        canvas.height = 500;
-        const ctx = canvas.getContext('2d');
-        const gif = new window.GIF({
-          workers: 2,
-          quality: 10,
-          width: canvas.width,
-          height: canvas.height,
-          workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
-        });
-        const FRAMES = 20;
-        const DELAY = Math.round(VIDEO_CLIP_SECONDS * 1000 / FRAMES);
-        for (let i = 0; i < FRAMES; i++) {
-          if (slide.type === 'video' && slide.videoEl) {
-            const t = (i / FRAMES) * VIDEO_CLIP_SECONDS;
-            slide.videoEl.currentTime = t;
-            await new Promise((res) => {
-              const ok = () => res();
-              slide.videoEl.addEventListener('seeked', ok, { once: true });
-              setTimeout(ok, 300);
-            });
-          }
-          drawSingleFrame(ctx, canvas.width, canvas.height, slide);
-          gif.addFrame(canvas, { delay: DELAY, copy: true });
-        }
-        const blob = await new Promise((resolve, reject) => {
-          gif.on('finished', (b) => resolve(b));
-          gif.on('abort', () => reject(new Error('gif aborted')));
-          gif.render();
-        });
-        slide.cleanup();
-        const ok = await saveBlob(blob, `maxiedit_single_${tsNow()}.gif`);
-        if (ok) showToast('저장 완료');
-      } catch (err) {
-        console.error(err);
-        alert('GIF 생성에 실패했습니다.\n' + (err.message || err));
-      } finally {
-        loadingBarEl.setAttribute('hidden', '');
-        btnSingleDownload.disabled = false;
-      }
-    };
-
     // Single download button → show format chooser modal.
     btnSingleDownload.addEventListener('click', () => {
       if (selected.length === 0) return;
@@ -2345,7 +2285,6 @@
     });
     btnSdPng.addEventListener('click', () => { hideModal(singleDownloadModal); downloadSinglePng(); });
     btnSdMp4.addEventListener('click', () => { hideModal(singleDownloadModal); downloadSingleMp4(); });
-    btnSdGif.addEventListener('click', () => { hideModal(singleDownloadModal); downloadSingleGif(); });
     btnSdCancel.addEventListener('click', () => hideModal(singleDownloadModal));
     singleDownloadModal.addEventListener('click', (e) => {
       if (e.target === singleDownloadModal) hideModal(singleDownloadModal);

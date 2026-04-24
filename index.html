@@ -793,27 +793,42 @@
       (label ? `<span>${label}</span>` : '') +
       '</span>';
 
-    // Draw the video's 0s frame onto a canvas to use as thumbnail; also return duration.
+    // Draw the video's opening frame onto a canvas to use as thumbnail; also return duration.
     const generateVideoThumbnail = (file) => new Promise((resolve, reject) => {
       const video = document.createElement('video');
       const sourceUrl = URL.createObjectURL(file);
+      // Attributes + properties — iOS Safari needs both (especially playsinline).
       video.src = sourceUrl;
       video.muted = true;
+      video.defaultMuted = true;
       video.playsInline = true;
-      video.preload = 'metadata';
+      video.setAttribute('muted', '');
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
+      video.preload = 'auto';
+      video.crossOrigin = 'anonymous';
+      // Some mobile browsers refuse to decode/seek until the element is in the DOM.
+      video.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
+      document.body.appendChild(video);
 
+      let done = false;
       const cleanup = () => {
-        video.removeAttribute('src');
-        video.load();
+        if (done) return;
+        done = true;
+        clearTimeout(timeoutId);
+        if (video.parentNode) video.parentNode.removeChild(video);
+        try { video.removeAttribute('src'); video.load(); } catch {}
       };
 
-      video.addEventListener('loadeddata', () => {
-        // Grab the very first visible frame — the start of our 1-second clip.
-        try { video.currentTime = 0; }
-        catch { /* some browsers auto-seek on load */ }
-      }, { once: true });
+      const timeoutId = setTimeout(() => {
+        if (done) return;
+        cleanup();
+        URL.revokeObjectURL(sourceUrl);
+        reject(new Error('video thumbnail timeout'));
+      }, 8000);
 
-      video.addEventListener('seeked', () => {
+      const capture = () => {
+        if (done) return;
         const duration = isFinite(video.duration) ? video.duration : null;
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth || 320;
@@ -830,12 +845,20 @@
           URL.revokeObjectURL(sourceUrl);
           reject(err);
         }
+      };
+
+      video.addEventListener('loadeddata', () => {
+        // currentTime = 0 often does NOT fire 'seeked' (no change). Use a tiny offset
+        // so 'seeked' reliably fires; the visual is still effectively frame 0.
+        try { video.currentTime = 0.04; }
+        catch (err) { capture(); }
       }, { once: true });
+      video.addEventListener('seeked', capture, { once: true });
 
       video.addEventListener('error', () => {
         cleanup();
         URL.revokeObjectURL(sourceUrl);
-        reject(new Error('video load error'));
+        reject(new Error('video load error: ' + (video.error ? video.error.code : '?')));
       }, { once: true });
     });
 
@@ -1049,6 +1072,7 @@
       photos.forEach(revokeMedia);
       photos.length = 0;
       selected.length = 0;
+      const skipped = [];
       for (const f of files) {
         if (f.type.startsWith('video/')) {
           try {
@@ -1056,11 +1080,15 @@
             photos.push({ url: thumbUrl, originalUrl, name: f.name, type: 'video', duration });
           } catch (err) {
             console.warn('video thumbnail failed for', f.name, err);
+            skipped.push(f.name);
           }
         } else if (f.type.startsWith('image/')) {
           const url = URL.createObjectURL(f);
           photos.push({ url, originalUrl: url, name: f.name, type: 'image' });
         }
+      }
+      if (skipped.length) {
+        showToast(`동영상 ${skipped.length}개 첨부 실패`);
       }
       buildPicker();
       render();

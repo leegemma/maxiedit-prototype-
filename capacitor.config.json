@@ -1,0 +1,8 @@
+{
+  "appId": "com.leegemma.maxiedit",
+  "appName": "MaxiEdit",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

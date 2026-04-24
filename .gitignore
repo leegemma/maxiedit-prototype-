@@ -1,3 +1,18 @@
 .DS_Store
 .claude/settings.local.json
 new
+
+# Capacitor / Node
+node_modules/
+www/
+package-lock.json
+
+# Android build outputs
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/app/release/
+android/captures/
+*.apk
+*.aab

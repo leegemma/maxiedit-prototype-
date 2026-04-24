@@ -291,6 +291,35 @@
       background-position: center;
       background-repeat: no-repeat;
     }
+    .media-badge-video {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .media-badge-video svg {
+      width: 14px;
+      height: 14px;
+      fill: #fff;
+    }
+    /* smaller variant for 56px thumbs */
+    .thumb .media-badge-video {
+      width: 22px;
+      height: 22px;
+    }
+    .thumb .media-badge-video svg {
+      width: 10px;
+      height: 10px;
+    }
     /* empty state — shown inside picker-grid when no photos loaded */
     .picker-empty {
       grid-column: 1 / -1;
@@ -640,7 +669,7 @@
 
   <!-- 02_edit page -->
   <section class="page" id="page-edit" hidden>
-    <input type="file" id="photo-input" accept="image/*" multiple style="display:none">
+    <input type="file" id="photo-input" accept="image/*,video/*" multiple style="display:none">
     <section class="edit" data-name="02_edit">
       <div class="edit-header">
         <button class="btn-icon" type="button" id="btn-edit-close" data-name="btn_close" aria-label="닫기">
@@ -734,9 +763,65 @@
       '#d2ecff', '#dcefe7', '#e7e7e7',
       '#d1f2c2', '#ebdff7', '#d9d9d9'
     ];
-    // Photos loaded from the device (via <input type="file" accept="image/*">).
-    // Each entry: { url: objectURL, name: string }
+    // Media loaded from the device (via <input type="file" accept="image/*,video/*">).
+    // Each entry: {
+    //   url,         // object URL used as visible thumbnail (first frame for videos)
+    //   originalUrl, // underlying file URL (same as url for images)
+    //   name,        // original file name
+    //   type,        // 'image' | 'video'
+    // }
     const photos = [];
+
+    // Lucide "play" icon markup reused for the video badge.
+    const VIDEO_BADGE_HTML =
+      '<span class="media-badge-video" aria-label="동영상">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>' +
+      '</span>';
+
+    // Draw first video frame onto a canvas and return a blob URL to use as thumbnail.
+    const generateVideoThumbnail = (file) => new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      const sourceUrl = URL.createObjectURL(file);
+      video.src = sourceUrl;
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = 'metadata';
+
+      const cleanup = () => {
+        video.removeAttribute('src');
+        video.load();
+      };
+
+      video.addEventListener('loadeddata', () => {
+        try { video.currentTime = Math.min(0.1, (video.duration || 0.2) / 4); }
+        catch { /* some browsers auto-seek on load */ }
+      }, { once: true });
+
+      video.addEventListener('seeked', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 320;
+        canvas.height = video.videoHeight || 320;
+        try {
+          canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => {
+            cleanup();
+            if (!blob) { URL.revokeObjectURL(sourceUrl); reject(new Error('toBlob failed')); return; }
+            // Keep the source URL around — it's the actual video file
+            resolve({ thumbUrl: URL.createObjectURL(blob), originalUrl: sourceUrl });
+          }, 'image/jpeg', 0.85);
+        } catch (err) {
+          cleanup();
+          URL.revokeObjectURL(sourceUrl);
+          reject(err);
+        }
+      }, { once: true });
+
+      video.addEventListener('error', () => {
+        cleanup();
+        URL.revokeObjectURL(sourceUrl);
+        reject(new Error('video load error'));
+      }, { once: true });
+    });
 
     const TEXT_LABELS_DEFAULT = [
       'Personal color',
@@ -824,6 +909,7 @@
         item.className = 'photo-item';
         item.style.backgroundImage = `url("${photo.url}")`;
         item.dataset.index = String(i);
+        if (photo.type === 'video') item.insertAdjacentHTML('beforeend', VIDEO_BADGE_HTML);
         const icon = document.createElement('span');
         icon.className = 'icon-check off';
         icon.dataset.name = 'icon_check_off';
@@ -903,6 +989,9 @@
         thumb.className = 'thumb';
         applyPhotoBg(thumb, photoIdx);
         thumb.dataset.photoIdx = String(photoIdx);
+        if (photos[photoIdx] && photos[photoIdx].type === 'video') {
+          thumb.insertAdjacentHTML('beforeend', VIDEO_BADGE_HTML);
+        }
         const num = document.createElement('span');
         num.className = 'thumb-num';
         num.textContent = String(i + 1);
@@ -926,17 +1015,34 @@
       btnResetTop.disabled = count === 0;
     };
 
+    // Revoke the object URLs backing a photos[] entry.
+    const revokeMedia = (p) => {
+      if (p.url) URL.revokeObjectURL(p.url);
+      if (p.originalUrl && p.originalUrl !== p.url) URL.revokeObjectURL(p.originalUrl);
+    };
+
     // Load files from <input type="file"> into photos[] and rebuild the picker.
-    const loadPhotoFiles = (fileList) => {
+    // Supports both images and videos (videos get a first-frame thumbnail).
+    const loadPhotoFiles = async (fileList) => {
       const files = Array.from(fileList || []);
       if (files.length === 0) return;
       // Revoke old object URLs before replacing
-      photos.forEach((p) => URL.revokeObjectURL(p.url));
+      photos.forEach(revokeMedia);
       photos.length = 0;
-      selected.length = 0; // indices reset
-      files.forEach((f) => {
-        photos.push({ url: URL.createObjectURL(f), name: f.name });
-      });
+      selected.length = 0;
+      for (const f of files) {
+        if (f.type.startsWith('video/')) {
+          try {
+            const { thumbUrl, originalUrl } = await generateVideoThumbnail(f);
+            photos.push({ url: thumbUrl, originalUrl, name: f.name, type: 'video' });
+          } catch (err) {
+            console.warn('video thumbnail failed for', f.name, err);
+          }
+        } else if (f.type.startsWith('image/')) {
+          const url = URL.createObjectURL(f);
+          photos.push({ url, originalUrl: url, name: f.name, type: 'image' });
+        }
+      }
       buildPicker();
       render();
     };
@@ -976,9 +1082,9 @@
       el.setAttribute('hidden', '');
     };
 
-    // Full reset — wipe loaded photos and selections (e.g. on leaving edit → home).
+    // Full reset — wipe loaded photos/videos and selections.
     const resetEditState = () => {
-      photos.forEach((p) => URL.revokeObjectURL(p.url));
+      photos.forEach(revokeMedia);
       photos.length = 0;
       selected.length = 0;
       buildPicker();

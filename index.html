@@ -580,6 +580,54 @@
       display: block;
     }
     .btn-reset-label { font-size: 14px; color: #fff; }
+
+    /* toast */
+    .toast {
+      position: absolute;
+      bottom: 110px;
+      left: 50%;
+      transform: translateX(-50%) translateY(24px);
+      opacity: 0;
+      background: rgba(28, 28, 28, 0.96);
+      color: #fff;
+      padding: 14px 20px 14px 16px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      pointer-events: none;
+      z-index: 3000;
+      white-space: nowrap;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+      transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.2, 0.9, 0.2, 1);
+    }
+    .toast.is-open {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .toast-check { width: 26px; height: 26px; flex-shrink: 0; }
+    .toast-check-ring {
+      fill: none;
+      stroke: #22c55e;
+      stroke-width: 2.2;
+      stroke-dasharray: 63;
+      stroke-dashoffset: 63;
+    }
+    .toast-check-mark {
+      fill: none;
+      stroke: #22c55e;
+      stroke-width: 2.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 20;
+      stroke-dashoffset: 20;
+    }
+    .toast.is-open .toast-check-ring { animation: toast-ring 0.45s 0.08s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+    .toast.is-open .toast-check-mark { animation: toast-mark 0.35s 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+    @keyframes toast-ring { to { stroke-dashoffset: 0; } }
+    @keyframes toast-mark { to { stroke-dashoffset: 0; } }
   </style>
 </head>
 <body>
@@ -670,6 +718,13 @@
       </div>
     </div>
   </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+    <svg class="toast-check" viewBox="0 0 24 24" aria-hidden="true">
+      <circle class="toast-check-ring" cx="12" cy="12" r="10"/>
+      <path class="toast-check-mark" d="M7 12.5l3.2 3.2L17 9"/>
+    </svg>
+    <span id="toast-text">저장 완료</span>
+  </div>
   </div><!-- /.app-frame -->
 
   <script>
@@ -706,6 +761,8 @@
     const btnNext = document.getElementById('btn-next');
     const btnClose = document.getElementById('btn-close');
     const btnDownload = document.getElementById('btn-download');
+    const toastEl = document.getElementById('toast');
+    const toastTextEl = document.getElementById('toast-text');
     const btnTextTool = document.getElementById('btn-text-tool');
     const btnTexteditCancel = document.getElementById('btn-textedit-cancel');
     const btnTexteditConfirm = document.getElementById('btn-textedit-confirm');
@@ -944,40 +1001,78 @@
     });
     btnClose.addEventListener('click', () => goTo('edit'));
 
-    // Download the full_image section as a PNG at 650px wide.
+    // Toast with check-mark draw animation.
+    let toastHideTimer = null;
+    let toastRemoveTimer = null;
+    const showToast = (msg = '저장 완료') => {
+      toastTextEl.textContent = msg;
+      clearTimeout(toastHideTimer);
+      clearTimeout(toastRemoveTimer);
+      toastEl.classList.remove('is-open');
+      toastEl.removeAttribute('hidden');
+      // Force a reflow so the animation restarts on repeat triggers
+      void toastEl.offsetWidth;
+      toastEl.classList.add('is-open');
+      toastHideTimer = setTimeout(() => {
+        toastEl.classList.remove('is-open');
+        toastRemoveTimer = setTimeout(() => toastEl.setAttribute('hidden', ''), 400);
+      }, 2200);
+    };
+
+    // Capture #page-result .full-image as a PNG (650px wide) and save/share.
+    const captureFullImage = async () => {
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      const fullImage = document.querySelector('#page-result .full-image');
+      if (!fullImage) throw new Error('full-image not found');
+      const TARGET_WIDTH = 650;
+      const SOURCE_WIDTH = 393;
+      const canvas = await html2canvas(fullImage, {
+        scale: TARGET_WIDTH / SOURCE_WIDTH,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+      });
+      return await new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/png');
+      });
+    };
+
     const downloadFullImage = async () => {
       if (typeof html2canvas === 'undefined') {
         alert('다운로드 라이브러리가 로드되지 않았습니다.');
         return;
       }
-      const fullImage = document.querySelector('#page-result .full-image');
-      if (!fullImage) return;
       btnDownload.disabled = true;
       try {
-        if (document.fonts && document.fonts.ready) await document.fonts.ready;
-        const TARGET_WIDTH = 650;
-        const SOURCE_WIDTH = 393;
-        const canvas = await html2canvas(fullImage, {
-          scale: TARGET_WIDTH / SOURCE_WIDTH,
-          backgroundColor: '#ffffff',
-          useCORS: true,
-          logging: false,
-        });
-        await new Promise((resolve) => {
-          canvas.toBlob((blob) => {
-            if (!blob) { resolve(); return; }
-            const url = URL.createObjectURL(blob);
-            const ts = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `maxiedit_${ts}.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-            resolve();
-          }, 'image/png');
-        });
+        const blob = await captureFullImage();
+        const ts = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+        const fileName = `maxiedit_${ts}.png`;
+        const file = new File([blob], fileName, { type: 'image/png' });
+
+        // Prefer Web Share API on mobile — iOS exposes the native share sheet
+        // so the user can tap "이미지 저장" to save into the Photos app.
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: 'MaxiEdit' });
+            showToast('저장 완료');
+            return;
+          } catch (err) {
+            if (err && err.name === 'AbortError') return; // user cancelled
+            // other errors → fall through to anchor download fallback
+          }
+        }
+
+        // Fallback: trigger an anchor download.
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        showToast('저장 완료');
       } catch (err) {
         console.error(err);
         alert('이미지 생성에 실패했습니다.');

@@ -285,8 +285,35 @@
       position: relative;
       overflow: hidden;
       cursor: pointer;
+      background-color: #222;
       background-size: cover;
       background-position: center;
+      background-repeat: no-repeat;
+    }
+    /* empty state — shown inside picker-grid when no photos loaded */
+    .picker-empty {
+      grid-column: 1 / -1;
+      grid-row: 1 / 4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 40px 20px;
+      color: #bbb;
+      font-size: 14px;
+      text-align: center;
+    }
+    .picker-empty button {
+      padding: 10px 24px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
     }
     .icon-check {
       position: absolute;
@@ -564,6 +591,7 @@
 
   <!-- 02_edit page -->
   <section class="page" id="page-edit" hidden>
+    <input type="file" id="photo-input" accept="image/*" multiple style="display:none">
     <section class="edit" data-name="02_edit">
       <div class="edit-header">
         <button class="btn-icon" type="button" id="btn-edit-close" data-name="btn_close" aria-label="닫기">
@@ -650,17 +678,9 @@
       '#d2ecff', '#dcefe7', '#e7e7e7',
       '#d1f2c2', '#ebdff7', '#d9d9d9'
     ];
-    const PHOTO_COLORS = (() => {
-      const base = [
-        '#9db0c0', '#a5b6a6', '#a8a8a8', '#8fa3b5', '#b0a899',
-        '#8ca5b8', '#a8b0a0', '#9a9a9a', '#c0b5a0', '#8a9db0',
-        '#b8a898', '#9eb0a0', '#a0a5b0', '#b0988a', '#90a8b0',
-        '#a8a098', '#98a8a0', '#b0a898'
-      ];
-      const out = [];
-      for (let i = 0; i < 50; i++) out.push(base[i % base.length]);
-      return out;
-    })();
+    // Photos loaded from the device (via <input type="file" accept="image/*">).
+    // Each entry: { url: objectURL, name: string }
+    const photos = [];
 
     const TEXT_LABELS_DEFAULT = [
       'Personal color',
@@ -688,6 +708,7 @@
     const btnTexteditCancel = document.getElementById('btn-textedit-cancel');
     const btnTexteditConfirm = document.getElementById('btn-textedit-confirm');
     const pickerGrid = document.getElementById('picker-grid');
+    const photoInput = document.getElementById('photo-input');
     const previewGridEl = document.getElementById('preview-grid');
     const resultGridEl = document.getElementById('result-grid');
     const thumbsEl = document.getElementById('selected-thumbs');
@@ -725,10 +746,24 @@
 
     const buildPicker = () => {
       pickerGrid.innerHTML = '';
-      PHOTO_COLORS.forEach((color, i) => {
+      if (photos.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'picker-empty';
+        const msg = document.createElement('p');
+        msg.textContent = '사진을 선택해 주세요';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = '사진 선택';
+        btn.addEventListener('click', () => photoInput.click());
+        empty.appendChild(msg);
+        empty.appendChild(btn);
+        pickerGrid.appendChild(empty);
+        return;
+      }
+      photos.forEach((photo, i) => {
         const item = document.createElement('div');
         item.className = 'photo-item';
-        item.style.background = color;
+        item.style.backgroundImage = `url("${photo.url}")`;
         item.dataset.index = String(i);
         const icon = document.createElement('span');
         icon.className = 'icon-check off';
@@ -737,6 +772,20 @@
         item.addEventListener('click', () => togglePhoto(i));
         pickerGrid.appendChild(item);
       });
+    };
+
+    const applyPhotoBg = (el, photoIdx) => {
+      const photo = photos[photoIdx];
+      if (!photo) return;
+      el.style.backgroundImage = `url("${photo.url}")`;
+      el.style.backgroundSize = 'cover';
+      el.style.backgroundPosition = 'center';
+      el.style.backgroundRepeat = 'no-repeat';
+      el.style.backgroundColor = '';
+    };
+    const clearPhotoBg = (el, fallbackColor) => {
+      el.style.backgroundImage = '';
+      el.style.backgroundColor = fallbackColor || '';
     };
 
     const togglePhoto = (index) => {
@@ -754,11 +803,11 @@
       gridEl.querySelectorAll('.p-section').forEach((section) => {
         const slotIndex = Number(section.dataset.slot);
         const photoIdx = selected[slotIndex];
-        if (photoIdx !== undefined) {
-          section.style.background = PHOTO_COLORS[photoIdx];
+        if (photoIdx !== undefined && photos[photoIdx]) {
+          applyPhotoBg(section, photoIdx);
           section.style.opacity = '1';
         } else {
-          section.style.background = SLOT_COLORS[slotIndex];
+          clearPhotoBg(section, SLOT_COLORS[slotIndex]);
           section.style.opacity = '0.7';
         }
       });
@@ -793,7 +842,7 @@
       selected.forEach((photoIdx, i) => {
         const thumb = document.createElement('div');
         thumb.className = 'thumb';
-        thumb.style.background = PHOTO_COLORS[photoIdx];
+        applyPhotoBg(thumb, photoIdx);
         thumb.dataset.photoIdx = String(photoIdx);
         const num = document.createElement('span');
         num.className = 'thumb-num';
@@ -818,6 +867,25 @@
       btnResetTop.disabled = count === 0;
     };
 
+    // Load files from <input type="file"> into photos[] and rebuild the picker.
+    const loadPhotoFiles = (fileList) => {
+      const files = Array.from(fileList || []);
+      if (files.length === 0) return;
+      // Revoke old object URLs before replacing
+      photos.forEach((p) => URL.revokeObjectURL(p.url));
+      photos.length = 0;
+      selected.length = 0; // indices reset
+      files.forEach((f) => {
+        photos.push({ url: URL.createObjectURL(f), name: f.name });
+      });
+      buildPicker();
+      render();
+    };
+    photoInput.addEventListener('change', (e) => {
+      loadPhotoFiles(e.target.files);
+      e.target.value = ''; // allow picking the same file(s) again next time
+    });
+
     // Page navigation — only one page visible at a time.
     const pages = { home: pageHome, edit: pageEdit, result: pageResult };
     let currentPage = 'home';
@@ -830,6 +898,11 @@
         else el.setAttribute('hidden', '');
       });
       currentPage = name;
+      // Auto-open the device photo picker when entering edit with no photos.
+      // Must happen in the same user-gesture turn as the button tap for iOS to allow it.
+      if (name === 'edit' && photos.length === 0) {
+        photoInput.click();
+      }
     };
 
     // Modal helpers — only used by textedit.

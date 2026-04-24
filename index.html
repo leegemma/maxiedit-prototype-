@@ -293,33 +293,34 @@
     }
     .media-badge-video {
       position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: rgba(0, 0, 0, 0.55);
-      color: #fff;
+      right: 6px;
+      bottom: 6px;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
+      gap: 3px;
+      padding: 2px 6px 2px 4px;
+      background: rgba(0, 0, 0, 0.62);
+      color: #fff;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1;
       pointer-events: none;
+      white-space: nowrap;
     }
     .media-badge-video svg {
-      width: 14px;
-      height: 14px;
-      fill: #fff;
+      width: 9px;
+      height: 9px;
+      fill: currentColor;
     }
-    /* smaller variant for 56px thumbs */
+    /* smaller variant for 56px selection thumbs */
     .thumb .media-badge-video {
-      width: 22px;
-      height: 22px;
+      right: 3px;
+      bottom: 3px;
+      padding: 1px 4px 1px 3px;
+      font-size: 9px;
     }
-    .thumb .media-badge-video svg {
-      width: 10px;
-      height: 10px;
-    }
+    .thumb .media-badge-video svg { width: 7px; height: 7px; }
     /* empty state — shown inside picker-grid when no photos loaded */
     .picker-empty {
       grid-column: 1 / -1;
@@ -769,16 +770,30 @@
     //   originalUrl, // underlying file URL (same as url for images)
     //   name,        // original file name
     //   type,        // 'image' | 'video'
+    //   duration,    // video only, in seconds (may be null if unknown)
     // }
     const photos = [];
 
-    // Lucide "play" icon markup reused for the video badge.
-    const VIDEO_BADGE_HTML =
+    // Clip every selected video at the very start — length used as the final slot.
+    const VIDEO_CLIP_SECONDS = 1;
+
+    // Format seconds as M:SS for the picker duration badge.
+    const formatDuration = (seconds) => {
+      if (!isFinite(seconds) || seconds <= 0) return '';
+      const s = Math.round(seconds);
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${m}:${String(r).padStart(2, '0')}`;
+    };
+
+    // Pill badge with play glyph + label (e.g. "0:15" or "1s").
+    const makeVideoBadgeHTML = (label) =>
       '<span class="media-badge-video" aria-label="동영상">' +
       '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>' +
+      (label ? `<span>${label}</span>` : '') +
       '</span>';
 
-    // Draw first video frame onto a canvas and return a blob URL to use as thumbnail.
+    // Draw the video's 0s frame onto a canvas to use as thumbnail; also return duration.
     const generateVideoThumbnail = (file) => new Promise((resolve, reject) => {
       const video = document.createElement('video');
       const sourceUrl = URL.createObjectURL(file);
@@ -793,11 +808,13 @@
       };
 
       video.addEventListener('loadeddata', () => {
-        try { video.currentTime = Math.min(0.1, (video.duration || 0.2) / 4); }
+        // Grab the very first visible frame — the start of our 1-second clip.
+        try { video.currentTime = 0; }
         catch { /* some browsers auto-seek on load */ }
       }, { once: true });
 
       video.addEventListener('seeked', () => {
+        const duration = isFinite(video.duration) ? video.duration : null;
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth || 320;
         canvas.height = video.videoHeight || 320;
@@ -806,8 +823,7 @@
           canvas.toBlob((blob) => {
             cleanup();
             if (!blob) { URL.revokeObjectURL(sourceUrl); reject(new Error('toBlob failed')); return; }
-            // Keep the source URL around — it's the actual video file
-            resolve({ thumbUrl: URL.createObjectURL(blob), originalUrl: sourceUrl });
+            resolve({ thumbUrl: URL.createObjectURL(blob), originalUrl: sourceUrl, duration });
           }, 'image/jpeg', 0.85);
         } catch (err) {
           cleanup();
@@ -909,7 +925,10 @@
         item.className = 'photo-item';
         item.style.backgroundImage = `url("${photo.url}")`;
         item.dataset.index = String(i);
-        if (photo.type === 'video') item.insertAdjacentHTML('beforeend', VIDEO_BADGE_HTML);
+        if (photo.type === 'video') {
+          const label = formatDuration(photo.duration);
+          item.insertAdjacentHTML('beforeend', makeVideoBadgeHTML(label));
+        }
         const icon = document.createElement('span');
         icon.className = 'icon-check off';
         icon.dataset.name = 'icon_check_off';
@@ -990,7 +1009,7 @@
         applyPhotoBg(thumb, photoIdx);
         thumb.dataset.photoIdx = String(photoIdx);
         if (photos[photoIdx] && photos[photoIdx].type === 'video') {
-          thumb.insertAdjacentHTML('beforeend', VIDEO_BADGE_HTML);
+          thumb.insertAdjacentHTML('beforeend', makeVideoBadgeHTML(`${VIDEO_CLIP_SECONDS}s`));
         }
         const num = document.createElement('span');
         num.className = 'thumb-num';
@@ -1033,8 +1052,8 @@
       for (const f of files) {
         if (f.type.startsWith('video/')) {
           try {
-            const { thumbUrl, originalUrl } = await generateVideoThumbnail(f);
-            photos.push({ url: thumbUrl, originalUrl, name: f.name, type: 'video' });
+            const { thumbUrl, originalUrl, duration } = await generateVideoThumbnail(f);
+            photos.push({ url: thumbUrl, originalUrl, name: f.name, type: 'video', duration });
           } catch (err) {
             console.warn('video thumbnail failed for', f.name, err);
           }

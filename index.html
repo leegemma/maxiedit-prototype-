@@ -44,7 +44,7 @@
     /* 00_home */
     .home-title {
       position: absolute;
-      top: 29px;
+      top: 14px;
       left: 50%;
       transform: translateX(-50%);
       font-size: 34px;
@@ -65,8 +65,8 @@
       border: none;
       cursor: pointer;
     }
-    .btn-camera { top: 98px; background: #aaa; }
-    .btn-start  { top: 447px; background: #fffb8a; }
+    .btn-camera { top: 83px; background: #aaa; }
+    .btn-start  { top: 432px; background: #fffb8a; }
 
     /* modal — only used by the textedit popup; sits above the current page */
     .modal {
@@ -207,7 +207,7 @@
     }
     .edit-header {
       position: absolute;
-      top: 37px;
+      top: 22px;
       left: 0;
       right: 0;
       height: 35px;
@@ -250,7 +250,7 @@
     /* preview (full_image scaled, aspect ratio preserved) */
     .preview {
       position: absolute;
-      top: 94px;
+      top: 79px;
       left: 0;
       right: 0;
       height: calc(522px * var(--preview-scale));
@@ -278,7 +278,7 @@
     /* bottom_layer_imageList — tabs + picker grid */
     .bottom-layer-imagelist {
       position: absolute;
-      top: calc(94px + 522px * var(--preview-scale));
+      top: calc(79px + 522px * var(--preview-scale));
       left: 0;
       right: 0;
       bottom: 0;
@@ -544,7 +544,7 @@
     }
     .btn-close, .btn-download {
       position: absolute;
-      top: 37px;
+      top: 22px;
       height: 40px;
       display: inline-flex;
       align-items: center;
@@ -591,7 +591,7 @@
     }
     .result .full-image {
       position: absolute;
-      top: 94px;
+      top: 79px;
       left: 0;
     }
     .result-grid {
@@ -659,8 +659,9 @@
 
     .btn-reset {
       position: absolute;
-      /* Bottom-anchored so it stays visible inside 100dvh on devices with chrome */
-      bottom: 40px;
+      /* Anchored below full_image so the gap stays constant regardless of viewport.
+         full-image top:79 + height:522 = bottom:601; 54px gap → top:655. */
+      top: 655px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;

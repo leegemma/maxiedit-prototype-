@@ -686,20 +686,35 @@
     }
     .btn-reset-label { font-size: 14px; color: #fff; }
 
-    /* 12_result_single — 2-panel (image + text) view for one selected photo */
+    /* 12_result_single — 2-panel (image + text) view with swipeable slide track */
     .single { position: relative; width: 100%; height: 100%; background: #000; overflow: hidden; color: #fff; }
-    .split-view {
+    .split-track {
       position: absolute;
       top: 79px;
       left: 0;
       right: 0;
       height: 560px;
       display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch; /* iOS momentum */
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      background: #000;
+    }
+    .split-track::-webkit-scrollbar { display: none; }
+    .split-slide {
+      flex: 0 0 100%;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      display: flex;
       flex-direction: column;
       background: #fff;
       overflow: hidden;
+      min-width: 0;
     }
-    .split-view.is-flipped { flex-direction: column-reverse; }
+    .split-slide.is-flipped { flex-direction: column-reverse; }
     .split-image {
       flex: 1 1 0;
       min-height: 0;
@@ -948,10 +963,7 @@
         <span>다운로드</span>
       </button>
 
-      <div class="split-view" id="split-view">
-        <div class="split-image" id="split-image"></div>
-        <div class="split-text" id="split-text"></div>
-      </div>
+      <div class="split-track" id="split-track"></div>
 
       <div class="indicator" id="single-indicator"></div>
 
@@ -1148,9 +1160,7 @@
     const btnTexteditConfirm = document.getElementById('btn-textedit-confirm');
     // 12_result_single page refs
     const pageSingle = document.getElementById('page-single');
-    const splitView = document.getElementById('split-view');
-    const splitImage = document.getElementById('split-image');
-    const splitText = document.getElementById('split-text');
+    const splitTrack = document.getElementById('split-track');
     const singleIndicator = document.getElementById('single-indicator');
     const btnSingleClose = document.getElementById('btn-single-close');
     const btnSingleDownload = document.getElementById('btn-single-download');
@@ -1931,95 +1941,118 @@
         textLabels[idx] = input.value;
       });
       renderTextareas();
-      if (currentPage === 'single') renderSingleView();
+      // If we're inside the single view, update just the affected slide's text
+      // in place (avoids rebuilding the scroll track / losing flip state).
+      if (currentPage === 'single') {
+        splitTrack.querySelectorAll('.split-slide').forEach((slide) => {
+          const i = Number(slide.dataset.idx);
+          const txt = slide.querySelector('.split-text');
+          if (txt) txt.textContent = textLabels[i] || '';
+        });
+      }
       closeTextedit();
     };
 
-    // 12_result_single — state + rendering
+    // 12_result_single — state + rendering. One .split-slide per selected slot.
+    // Each slide scroll-snaps full width; iOS momentum scrolling handles the slide feel.
     let currentSingleIdx = 0;
-    let singleFlipped = false;
 
-    const openSingle = (slotIdx) => {
-      if (selected.length === 0) return;
-      if (slotIdx === undefined || slotIdx < 0 || slotIdx >= selected.length) slotIdx = 0;
-      currentSingleIdx = slotIdx;
-      singleFlipped = false;
-      splitView.classList.remove('is-flipped');
-      goTo('single');
-      renderSingleView();
+    const buildSingleSlides = () => {
+      splitTrack.innerHTML = '';
+      selected.forEach((photoIdx, i) => {
+        const slide = document.createElement('div');
+        slide.className = 'split-slide';
+        slide.dataset.idx = String(i);
+
+        const image = document.createElement('div');
+        image.className = 'split-image';
+        const text = document.createElement('div');
+        text.className = 'split-text';
+        text.textContent = textLabels[i] || '';
+
+        const photo = photos[photoIdx];
+        if (photo) {
+          if (photo.type === 'video' && photo.originalUrl) {
+            const v = document.createElement('video');
+            v.src = photo.originalUrl;
+            v.muted = true;
+            v.defaultMuted = true;
+            v.playsInline = true;
+            v.setAttribute('muted', '');
+            v.setAttribute('playsinline', '');
+            v.setAttribute('webkit-playsinline', '');
+            v.autoplay = true;
+            v.loop = true;
+            v.addEventListener('timeupdate', () => {
+              if (v.currentTime >= VIDEO_CLIP_SECONDS) v.currentTime = 0;
+            });
+            image.appendChild(v);
+            v.play().catch(() => {});
+          } else {
+            image.style.backgroundImage = `url("${photo.url}")`;
+            image.style.backgroundColor = '';
+          }
+        }
+
+        slide.appendChild(image);
+        slide.appendChild(text);
+        splitTrack.appendChild(slide);
+      });
     };
 
-    const renderSingleView = () => {
-      if (selected.length === 0) return;
-      if (currentSingleIdx >= selected.length) currentSingleIdx = selected.length - 1;
-
-      const photoIdx = selected[currentSingleIdx];
-      const photo = photos[photoIdx];
-
-      // Media pane — clear any prior <video> and rebuild
-      const prior = splitImage.querySelector('video');
-      if (prior) { try { prior.pause(); } catch {} prior.remove(); }
-      splitImage.style.backgroundImage = '';
-      splitImage.style.backgroundColor = '#ffefb7';
-      if (photo) {
-        if (photo.type === 'video' && photo.originalUrl) {
-          const v = document.createElement('video');
-          v.src = photo.originalUrl;
-          v.muted = true;
-          v.defaultMuted = true;
-          v.playsInline = true;
-          v.setAttribute('muted', '');
-          v.setAttribute('playsinline', '');
-          v.setAttribute('webkit-playsinline', '');
-          v.autoplay = true;
-          v.loop = true;
-          v.addEventListener('timeupdate', () => {
-            if (v.currentTime >= VIDEO_CLIP_SECONDS) v.currentTime = 0;
-          });
-          splitImage.appendChild(v);
-          v.play().catch(() => {});
-        } else {
-          splitImage.style.backgroundImage = `url("${photo.url}")`;
-          splitImage.style.backgroundColor = '';
-        }
-      }
-
-      // Text pane
-      splitText.textContent = textLabels[currentSingleIdx] || '';
-
-      // Indicator dots
+    const renderSingleIndicator = () => {
       singleIndicator.innerHTML = '';
       selected.forEach((_, i) => {
         const dot = document.createElement('button');
         dot.type = 'button';
         dot.className = 'indicator-dot' + (i === currentSingleIdx ? ' is-active' : '');
         dot.setAttribute('aria-label', `${i + 1}번째`);
-        dot.addEventListener('click', () => {
-          currentSingleIdx = i;
-          renderSingleView();
-        });
+        dot.addEventListener('click', () => scrollSingleTo(i, true));
         singleIndicator.appendChild(dot);
       });
     };
 
-    // Swipe navigation across slots in single view
-    let singleTouchStartX = 0;
-    splitView.addEventListener('touchstart', (e) => {
-      singleTouchStartX = e.touches[0].clientX;
-    }, { passive: true });
-    splitView.addEventListener('touchend', (e) => {
-      const dx = e.changedTouches[0].clientX - singleTouchStartX;
-      if (Math.abs(dx) < 50) return;
-      if (dx > 0 && currentSingleIdx > 0) currentSingleIdx--;
-      else if (dx < 0 && currentSingleIdx < selected.length - 1) currentSingleIdx++;
-      else return;
+    const scrollSingleTo = (idx, smooth = false) => {
+      const w = splitTrack.clientWidth;
+      splitTrack.scrollTo({ left: idx * w, behavior: smooth ? 'smooth' : 'auto' });
+    };
+
+    const renderSingleView = () => {
+      if (selected.length === 0) return;
+      if (currentSingleIdx >= selected.length) currentSingleIdx = selected.length - 1;
+      buildSingleSlides();
+      renderSingleIndicator();
+      // Jump to the current slide (no animation — initial render)
+      requestAnimationFrame(() => scrollSingleTo(currentSingleIdx, false));
+    };
+
+    const openSingle = (slotIdx) => {
+      if (selected.length === 0) return;
+      if (slotIdx === undefined || slotIdx < 0 || slotIdx >= selected.length) slotIdx = 0;
+      currentSingleIdx = slotIdx;
+      goTo('single');
       renderSingleView();
-    });
+    };
+
+    // Update indicator as the user swipes between slides.
+    let singleScrollTimer = null;
+    splitTrack.addEventListener('scroll', () => {
+      clearTimeout(singleScrollTimer);
+      singleScrollTimer = setTimeout(() => {
+        const w = splitTrack.clientWidth;
+        if (!w) return;
+        const newIdx = Math.round(splitTrack.scrollLeft / w);
+        if (newIdx !== currentSingleIdx && newIdx >= 0 && newIdx < selected.length) {
+          currentSingleIdx = newIdx;
+          renderSingleIndicator();
+        }
+      }, 60);
+    }, { passive: true });
 
     btnSingleClose.addEventListener('click', () => goTo('result'));
     btnFlip.addEventListener('click', () => {
-      singleFlipped = !singleFlipped;
-      splitView.classList.toggle('is-flipped', singleFlipped);
+      const slide = splitTrack.children[currentSingleIdx];
+      if (slide) slide.classList.toggle('is-flipped');
     });
     btnTextSingle.addEventListener('click', () => openTextedit(currentSingleIdx));
 
@@ -2030,8 +2063,9 @@
       try {
         if (typeof html2canvas === 'undefined') throw new Error('html2canvas unavailable');
         if (document.fonts && document.fonts.ready) await document.fonts.ready;
-        const node = document.querySelector('#page-single .split-view');
-        if (!node) throw new Error('split-view not found');
+        // Capture only the currently visible slide (not the whole scroll track).
+        const node = splitTrack.children[currentSingleIdx];
+        if (!node) throw new Error('active slide not found');
         const canvas = await html2canvas(node, {
           scale: SCALE_OUT,
           backgroundColor: '#ffffff',

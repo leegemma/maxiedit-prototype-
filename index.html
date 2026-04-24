@@ -821,11 +821,20 @@
       (label ? `<span>${label}</span>` : '') +
       '</span>';
 
+    // Placeholder tile used when video thumbnail generation fails — the video is
+    // still attached, just without a frame preview so the user can see it's there.
+    const VIDEO_FALLBACK_THUMB =
+      'data:image/svg+xml;utf8,' + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+        '<rect width="100" height="100" fill="#3a3a3a"/>' +
+        '<polygon points="40,32 72,50 40,68" fill="#fff"/>' +
+        '</svg>'
+      );
+
     // Draw the video's opening frame onto a canvas to use as thumbnail; also return duration.
-    const generateVideoThumbnail = (file) => new Promise((resolve, reject) => {
+    const generateVideoThumbnail = async (file) => {
       const video = document.createElement('video');
       const sourceUrl = URL.createObjectURL(file);
-      // Attributes + properties — iOS Safari needs both (especially playsinline).
       video.src = sourceUrl;
       video.muted = true;
       video.defaultMuted = true;
@@ -834,61 +843,57 @@
       video.setAttribute('playsinline', '');
       video.setAttribute('webkit-playsinline', '');
       video.preload = 'auto';
-      video.crossOrigin = 'anonymous';
-      // Some mobile browsers refuse to decode/seek until the element is in the DOM.
-      video.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
+      // Keep in DOM — some mobile browsers refuse to decode frames for offscreen video.
+      video.style.cssText = 'position:fixed;top:0;left:0;width:64px;height:64px;opacity:0.001;pointer-events:none;z-index:-9999;';
       document.body.appendChild(video);
 
-      let done = false;
       const cleanup = () => {
-        if (done) return;
-        done = true;
-        clearTimeout(timeoutId);
+        try { video.pause(); } catch {}
         if (video.parentNode) video.parentNode.removeChild(video);
         try { video.removeAttribute('src'); video.load(); } catch {}
       };
 
-      const timeoutId = setTimeout(() => {
-        if (done) return;
-        cleanup();
-        URL.revokeObjectURL(sourceUrl);
-        reject(new Error('video thumbnail timeout'));
-      }, 8000);
+      const waitFor = (eventName, ms) => new Promise((resolve, reject) => {
+        const onOk = () => { cleanupWait(); resolve(); };
+        const onErr = () => { cleanupWait(); reject(new Error(`${eventName} failed (code ${video.error ? video.error.code : '?'})`)); };
+        const timer = setTimeout(() => { cleanupWait(); reject(new Error(`${eventName} timeout`)); }, ms);
+        const cleanupWait = () => {
+          clearTimeout(timer);
+          video.removeEventListener(eventName, onOk);
+          video.removeEventListener('error', onErr);
+        };
+        video.addEventListener(eventName, onOk, { once: true });
+        video.addEventListener('error', onErr, { once: true });
+      });
 
-      const capture = () => {
-        if (done) return;
+      try {
+        await waitFor('loadedmetadata', 6000);
+        // Muted autoplay is allowed on iOS 10+. A brief play/pause pushes the decoder
+        // to actually render frames before we try to paint one to canvas.
+        try { await video.play(); video.pause(); } catch {}
+        // Seek to a small non-zero offset — setting currentTime to 0 when already at 0
+        // does not fire 'seeked' and we would hang forever.
+        const seekTarget = Math.min(0.05, (video.duration || 1) / 10);
+        const seekedPromise = waitFor('seeked', 5000);
+        video.currentTime = seekTarget;
+        await seekedPromise;
+
         const duration = isFinite(video.duration) ? video.duration : null;
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth || 320;
         canvas.height = video.videoHeight || 320;
-        try {
-          canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-          canvas.toBlob((blob) => {
-            cleanup();
-            if (!blob) { URL.revokeObjectURL(sourceUrl); reject(new Error('toBlob failed')); return; }
-            resolve({ thumbUrl: URL.createObjectURL(blob), originalUrl: sourceUrl, duration });
-          }, 'image/jpeg', 0.85);
-        } catch (err) {
-          cleanup();
-          URL.revokeObjectURL(sourceUrl);
-          reject(err);
-        }
-      };
-
-      video.addEventListener('loadeddata', () => {
-        // currentTime = 0 often does NOT fire 'seeked' (no change). Use a tiny offset
-        // so 'seeked' reliably fires; the visual is still effectively frame 0.
-        try { video.currentTime = 0.04; }
-        catch (err) { capture(); }
-      }, { once: true });
-      video.addEventListener('seeked', capture, { once: true });
-
-      video.addEventListener('error', () => {
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise((res, rej) => {
+          canvas.toBlob((b) => b ? res(b) : rej(new Error('toBlob null')), 'image/jpeg', 0.85);
+        });
+        cleanup();
+        return { thumbUrl: URL.createObjectURL(blob), originalUrl: sourceUrl, duration };
+      } catch (err) {
         cleanup();
         URL.revokeObjectURL(sourceUrl);
-        reject(new Error('video load error: ' + (video.error ? video.error.code : '?')));
-      }, { once: true });
-    });
+        throw err;
+      }
+    };
 
     const TEXT_LABELS_DEFAULT = [
       'Personal color',

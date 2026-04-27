@@ -112,7 +112,7 @@
     .textedit-num {
       flex-shrink: 0;
       min-width: 30px;
-      font-family: 'Nanum Myeongjo', serif;
+      font-family: inherit;     /* match the button font (Inter / Noto Sans KR) */
       font-weight: 700;
       font-size: 15px;
       color: #000;
@@ -123,7 +123,7 @@
       min-width: 0;
       border: none;
       background: transparent;
-      font-family: 'Nanum Myeongjo', serif;
+      font-family: inherit;     /* match the button font (Inter / Noto Sans KR) */
       font-size: 15px;
       color: #000;
       padding: 4px 2px;
@@ -2224,21 +2224,30 @@
       };
     };
 
-    // Single PNG — just snapshot the currently visible slide DOM.
+    // Single output dimensions — both PNG and MP4 use these so video and photo
+    // exports come out at exactly the same pixel size. Aspect mirrors the
+    // viewport's 80% × 80% content area (393×662 viewport → 314×530 content
+    // → 0.5925 aspect → 650 × 1097).
+    const SINGLE_OUT_W = 650;
+    const SINGLE_OUT_H = 1097;
+
+    // Single PNG — paint the split layout onto a fresh canvas (same code path
+    // as the MP4 export, just one frame). This excludes the on-screen 20%
+    // viewport margin from the output, as requested.
     const downloadSinglePng = async () => {
       btnSingleDownload.disabled = true;
       loadingBarEl.removeAttribute('hidden');
       try {
-        if (typeof html2canvas === 'undefined') throw new Error('html2canvas unavailable');
         if (document.fonts && document.fonts.ready) await document.fonts.ready;
-        const node = splitTrack.children[currentSingleIdx];
-        if (!node) throw new Error('active slide not found');
-        const canvas = await html2canvas(node, {
-          scale: SCALE_OUT,
-          backgroundColor: '#ffffff',
-          useCORS: true,
-          logging: false,
-        });
+        const slide = await prepareSingleSlideForExport();
+        const canvas = document.createElement('canvas');
+        canvas.width = SINGLE_OUT_W;
+        canvas.height = SINGLE_OUT_H;
+        const ctx = canvas.getContext('2d');
+        drawSingleFrame(ctx, canvas.width, canvas.height, slide);
+        await new Promise((r) => requestAnimationFrame(r));
+        drawSingleFrame(ctx, canvas.width, canvas.height, slide);
+        slide.cleanup();
         const blob = await new Promise((res, rej) => {
           canvas.toBlob((b) => b ? res(b) : rej(new Error('toBlob failed')), 'image/png');
         });
@@ -2246,7 +2255,7 @@
         if (ok) showToast('저장 완료');
       } catch (err) {
         console.error(err);
-        alert('이미지 생성에 실패했습니다.');
+        alert('이미지 생성에 실패했습니다.\n' + (err.message || err));
       } finally {
         loadingBarEl.setAttribute('hidden', '');
         btnSingleDownload.disabled = false;
@@ -2268,8 +2277,8 @@
         if (!mime) { slide.cleanup(); throw new Error('no codec'); }
 
         const canvas = document.createElement('canvas');
-        canvas.width = 650;
-        canvas.height = 650;
+        canvas.width = SINGLE_OUT_W;
+        canvas.height = SINGLE_OUT_H;
         const ctx = canvas.getContext('2d');
         drawSingleFrame(ctx, canvas.width, canvas.height, slide);
         await new Promise((r) => requestAnimationFrame(r));

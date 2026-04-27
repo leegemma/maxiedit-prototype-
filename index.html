@@ -77,6 +77,15 @@
       background: rgba(255, 255, 255, 0.3);
       margin: 56px auto 0;
     }
+    .home-version {
+      margin: 18px 0 0;
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.3);
+      text-align: center;
+    }
     .home-actions {
       margin-top: auto;
       display: flex;
@@ -206,6 +215,58 @@
       font-weight: 600;
     }
     .btn-textedit-cancel:active, .btn-textedit-confirm:active { opacity: 0.7; }
+
+    /* confirm dialog (reused for X / reset on edit page) */
+    .confirm-card {
+      width: 280px;
+      max-width: 80vw;
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+    }
+    .confirm-text {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.5;
+      color: #111;
+      text-align: center;
+      margin: 0;
+      white-space: pre-line;
+    }
+    .confirm-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .confirm-actions button {
+      flex: 1;
+      height: 44px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.15s, background-color 0.15s;
+    }
+    .btn-confirm-cancel {
+      background: transparent;
+      border-color: rgba(0, 0, 0, 0.18);
+      color: #111;
+      font-weight: 400;
+    }
+    .btn-confirm-cancel:hover { background: rgba(0, 0, 0, 0.04); }
+    .btn-confirm-ok {
+      background: #fffb8a;
+      color: #111;
+      font-weight: 600;
+    }
+    .btn-confirm-cancel:active, .btn-confirm-ok:active { opacity: 0.78; }
 
     /* download format chooser modal */
     .download-card {
@@ -471,43 +532,50 @@
     /* empty state — overlays picker-grid so it never participates in grid sizing
        (otherwise grid-row span + grid-auto-rows of 128px each would force a 3-row
        384px box that overflows the picker on short viewports and triggers a
-       vertical scrollbar). */
+       vertical scrollbar). The whole area is a single tap target. */
     .picker-empty {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      bottom: 0;
+      bottom: 90px; /* clear the bottom-layer-select bar */
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
-      gap: 16px;
-      padding: 110px 20px 40px;
-      color: rgba(255, 255, 255, 0.55);
-      font-family: inherit;
-      font-size: 12px;
-      letter-spacing: 0.06em;
-      text-align: center;
-      pointer-events: none;
-    }
-    .picker-empty button { pointer-events: auto; }
-    .picker-empty button {
-      padding: 12px 28px;
+      justify-content: center;
+      gap: 14px;
       background: transparent;
-      color: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(255, 255, 255, 0.32);
-      border-radius: 4px;
+      border: none;
+      color: rgba(255, 255, 255, 0.62);
       font-family: inherit;
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
       cursor: pointer;
-      transition: opacity 0.15s, background-color 0.15s;
+      padding: 0 20px;
+      transition: background-color 0.15s, color 0.15s;
+      -webkit-tap-highlight-color: transparent;
     }
-    .picker-empty button:hover { background: rgba(255, 255, 255, 0.05); }
-    .picker-empty button:active { opacity: 0.75; }
+    .picker-empty:hover { background: rgba(255, 255, 255, 0.03); color: rgba(255, 255, 255, 0.85); }
+    .picker-empty:active { background: rgba(255, 255, 255, 0.06); }
+    .picker-empty-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 200;
+      line-height: 1;
+      color: inherit;
+      transition: border-color 0.15s;
+    }
+    .picker-empty:hover .picker-empty-icon { border-color: rgba(255, 255, 255, 0.5); }
+    .picker-empty-text {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
     .icon-check {
       position: absolute;
       top: 8px;
@@ -1032,9 +1100,10 @@
       <h1 class="home-title">MAXIEDIT</h1>
       <p class="home-tag">make your moment a series</p>
       <div class="home-rule" aria-hidden="true"></div>
+      <p class="home-version">v1</p>
     </header>
     <footer class="home-actions">
-      <button class="btn-camera" type="button" data-name="btn_camera">사진 찍기</button>
+      <button class="btn-camera" type="button" data-name="btn_camera" hidden>사진 찍기</button>
       <button class="btn-start" type="button" id="btn-start" data-name="btn_start">편집하기</button>
     </footer>
   </section>
@@ -1156,6 +1225,17 @@
         모두 저장
       </button>
       <button type="button" id="btn-download-cancel">취소</button>
+    </div>
+  </div>
+
+  <!-- confirm dialog — used by X / reset on edit page -->
+  <div class="modal" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-text" hidden>
+    <div class="confirm-card">
+      <p class="confirm-text" id="confirm-text"></p>
+      <div class="confirm-actions">
+        <button class="btn-confirm-cancel" type="button" id="btn-confirm-cancel">취소</button>
+        <button class="btn-confirm-ok" type="button" id="btn-confirm-ok">확인</button>
+      </div>
     </div>
   </div>
 
@@ -1376,16 +1456,13 @@
     const buildPicker = () => {
       pickerGrid.innerHTML = '';
       if (photos.length === 0) {
-        const empty = document.createElement('div');
+        const empty = document.createElement('button');
+        empty.type = 'button';
         empty.className = 'picker-empty';
-        const msg = document.createElement('p');
-        msg.textContent = '사진을 선택해 주세요';
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.textContent = '사진 선택';
-        btn.addEventListener('click', () => photoInput.click());
-        empty.appendChild(msg);
-        empty.appendChild(btn);
+        empty.innerHTML =
+          '<span class="picker-empty-icon" aria-hidden="true">+</span>' +
+          '<span class="picker-empty-text">탭하여 사진 선택</span>';
+        empty.addEventListener('click', () => photoInput.click());
         pickerGrid.appendChild(empty);
         return;
       }
@@ -1437,7 +1514,10 @@
       if (pos >= 0) {
         selected.splice(pos, 1);
       } else {
-        if (selected.length >= MAX_SELECT) return;
+        if (selected.length >= MAX_SELECT) {
+          showToast('최대 9개까지 선택할 수 있어요.', { showIcon: false });
+          return;
+        }
         selected.push(index);
       }
       render();
@@ -1654,8 +1734,26 @@
     const pages = { home: pageHome, edit: pageEdit, result: pageResult, single: pageSingle };
     const bottomLayerSelectEl = document.querySelector('#page-edit .bottom-layer-select');
     let currentPage = 'home';
+
+    // Lock page navigation + close buttons while a download is rendering.
+    // Nesting-safe so downloadAllContent can wrap the per-slot helpers without
+    // briefly unlocking between them.
+    let isDownloading = false;
+    let downloadDepth = 0;
+    const navCloseButtons = [btnEditClose, btnClose, btnSingleClose];
+    const setDownloadingState = (busy) => {
+      if (busy) downloadDepth++;
+      else downloadDepth = Math.max(0, downloadDepth - 1);
+      isDownloading = downloadDepth > 0;
+      navCloseButtons.forEach((b) => { if (b) b.disabled = isDownloading; });
+    };
+
     const goTo = (name) => {
       if (!pages[name]) return;
+      if (isDownloading) {
+        showToast('다운로드 중에는 이동할 수 없어요.', { showIcon: false });
+        return;
+      }
       // Leaving the result page? Dismiss the textedit modal if it's up.
       if (currentPage === 'result' && name !== 'result') hideModal(texteditOverlay);
       Object.entries(pages).forEach(([k, el]) => {
@@ -1689,6 +1787,29 @@
       el.setAttribute('hidden', '');
     };
 
+    // Confirm dialog — promise-based, reused by X / reset on edit page.
+    const confirmModal = document.getElementById('confirm-modal');
+    const confirmTextEl = document.getElementById('confirm-text');
+    const btnConfirmOk = document.getElementById('btn-confirm-ok');
+    const btnConfirmCancel = document.getElementById('btn-confirm-cancel');
+    let confirmResolver = null;
+    const askConfirm = (message) => {
+      confirmTextEl.textContent = message;
+      showModal(confirmModal);
+      return new Promise((resolve) => { confirmResolver = resolve; });
+    };
+    const settleConfirm = (result) => {
+      hideModal(confirmModal);
+      const r = confirmResolver;
+      confirmResolver = null;
+      if (r) r(result);
+    };
+    btnConfirmOk.addEventListener('click', () => settleConfirm(true));
+    btnConfirmCancel.addEventListener('click', () => settleConfirm(false));
+    confirmModal.addEventListener('click', (e) => {
+      if (e.target === confirmModal) settleConfirm(false);
+    });
+
     // Full reset — wipe loaded photos/videos and selections.
     const resetEditState = () => {
       photos.forEach(revokeMedia);
@@ -1699,12 +1820,21 @@
     };
 
     btnStart.addEventListener('click', () => goTo('edit'));
-    btnEditClose.addEventListener('click', () => {
+    btnEditClose.addEventListener('click', async () => {
+      // Skip the prompt if there's nothing to lose.
+      if (photos.length === 0 && selected.length === 0) {
+        goTo('home');
+        return;
+      }
+      const ok = await askConfirm('편집을 종료할까요?\n선택한 사진과 입력한 텍스트가 모두 사라져요.');
+      if (!ok) return;
       resetEditState();
       goTo('home');
     });
-    btnResetTop.addEventListener('click', () => {
+    btnResetTop.addEventListener('click', async () => {
       if (selected.length === 0) return;
+      const ok = await askConfirm('선택한 사진을 모두 해제할까요?');
+      if (!ok) return;
       selected.length = 0;
       render();
     });
@@ -1714,11 +1844,14 @@
     });
     btnClose.addEventListener('click', () => goTo('edit'));
 
-    // Toast with check-mark draw animation.
+    // Toast with check-mark draw animation. Pass { showIcon: false } for
+    // info/warning messages where the green check is misleading.
     let toastHideTimer = null;
     let toastRemoveTimer = null;
-    const showToast = (msg = '저장 완료') => {
+    const toastCheckEl = toastEl.querySelector('.toast-check');
+    const showToast = (msg = '저장 완료', { showIcon = true } = {}) => {
       toastTextEl.textContent = msg;
+      if (toastCheckEl) toastCheckEl.style.display = showIcon ? '' : 'none';
       clearTimeout(toastHideTimer);
       clearTimeout(toastRemoveTimer);
       toastEl.classList.remove('is-open');
@@ -2031,6 +2164,7 @@
     const downloadPng = async () => {
       btnDownload.disabled = true;
       loadingBarEl.removeAttribute('hidden');
+      setDownloadingState(true);
       try {
         const blob = await capturePng();
         const ok = await saveBlob(blob, `maxiedit_${tsNow()}.png`);
@@ -2041,12 +2175,14 @@
       } finally {
         loadingBarEl.setAttribute('hidden', '');
         btnDownload.disabled = false;
+        setDownloadingState(false);
       }
     };
 
     const downloadMp4 = async () => {
       btnDownload.disabled = true;
       loadingBarEl.removeAttribute('hidden');
+      setDownloadingState(true);
       try {
         const { blob, mime } = await captureMp4();
         let finalBlob = blob;
@@ -2064,6 +2200,7 @@
       } finally {
         loadingBarEl.setAttribute('hidden', '');
         btnDownload.disabled = false;
+        setDownloadingState(false);
       }
     };
 
@@ -2101,26 +2238,34 @@
     const downloadAllContent = async () => {
       if (selected.length === 0) return;
       const anyVideo = selected.some((i) => photos[i] && photos[i].type === 'video');
+      setDownloadingState(true);
       try {
-        if (anyVideo) await downloadMp4();
-        else await downloadPng();
-      } catch (err) { console.warn('full save failed', err); }
-      for (let i = 0; i < selected.length; i++) {
-        const photoIdx = selected[i];
-        const slotIsVideo = photos[photoIdx] && photos[photoIdx].type === 'video';
-        currentSingleIdx = i;
         try {
-          if (slotIsVideo) await downloadSingleMp4();
-          else await downloadSinglePng();
-        } catch (err) { console.warn(`slide ${i} save failed`, err); }
+          if (anyVideo) await downloadMp4();
+          else await downloadPng();
+        } catch (err) { console.warn('full save failed', err); }
+        for (let i = 0; i < selected.length; i++) {
+          const photoIdx = selected[i];
+          const slotIsVideo = photos[photoIdx] && photos[photoIdx].type === 'video';
+          currentSingleIdx = i;
+          try {
+            if (slotIsVideo) await downloadSingleMp4();
+            else await downloadSinglePng();
+          } catch (err) { console.warn(`slide ${i} save failed`, err); }
+        }
+        showToast('전체 저장 완료');
+      } finally {
+        setDownloadingState(false);
       }
-      showToast('전체 저장 완료');
     };
 
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
-      // Only the textedit modal responds to Escape; pages have explicit nav.
-      if (texteditOverlay.classList.contains('is-open')) closeTextedit();
+      // Close the top-most modal first; only one Esc press per modal.
+      // Order matches z-order: confirm sits above textedit/download in user flow.
+      if (confirmModal.classList.contains('is-open')) { settleConfirm(false); return; }
+      if (texteditOverlay.classList.contains('is-open')) { closeTextedit(); return; }
+      if (downloadModal.classList.contains('is-open')) { hideModal(downloadModal); return; }
     });
 
     document.querySelectorAll('.cat-tab').forEach((tab) => {
@@ -2195,7 +2340,24 @@
     // Each slide scroll-snaps full width; iOS momentum scrolling handles the slide feel.
     let currentSingleIdx = 0;
 
+    // Pause videos that scrolled off-screen so 9 videos don't all decode at once.
+    // The observer is attached after the page is shown (root must be visible to
+    // produce useful intersection ratios on iOS).
+    const singleVideoObserver = ('IntersectionObserver' in window)
+      ? new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            const v = entry.target;
+            if (entry.isIntersecting) {
+              v.play().catch(() => {});
+            } else {
+              try { v.pause(); } catch {}
+            }
+          });
+        }, { root: splitTrack, threshold: 0.5 })
+      : null;
+
     const buildSingleSlides = () => {
+      if (singleVideoObserver) singleVideoObserver.disconnect();
       splitTrack.innerHTML = '';
       selected.forEach((photoIdx, i) => {
         const slide = document.createElement('div');
@@ -2219,13 +2381,19 @@
             v.setAttribute('muted', '');
             v.setAttribute('playsinline', '');
             v.setAttribute('webkit-playsinline', '');
-            v.autoplay = true;
             v.loop = true;
             v.addEventListener('timeupdate', () => {
               if (v.currentTime >= VIDEO_CLIP_SECONDS) v.currentTime = 0;
             });
             image.appendChild(v);
-            v.play().catch(() => {});
+            // Observer drives play/pause based on visibility. Fall back to
+            // autoplay when IntersectionObserver isn't available.
+            if (singleVideoObserver) {
+              singleVideoObserver.observe(v);
+            } else {
+              v.autoplay = true;
+              v.play().catch(() => {});
+            }
           } else {
             image.style.backgroundImage = `url("${photo.url}")`;
             image.style.backgroundColor = '';
@@ -2304,6 +2472,7 @@
       if (singleTouchStartX === null) return;
       const dx = e.changedTouches[0].clientX - singleTouchStartX;
       singleTouchStartX = null;
+      if (isDownloading) return;
       if (dx > 80 && splitTrack.scrollLeft === 0) goTo('result');
     }, { passive: true });
 
@@ -2423,6 +2592,7 @@
     const downloadSinglePng = async () => {
       btnSingleDownload.disabled = true;
       loadingBarEl.removeAttribute('hidden');
+      setDownloadingState(true);
       try {
         if (document.fonts && document.fonts.ready) await document.fonts.ready;
         const slide = await prepareSingleSlideForExport();
@@ -2445,6 +2615,7 @@
       } finally {
         loadingBarEl.setAttribute('hidden', '');
         btnSingleDownload.disabled = false;
+        setDownloadingState(false);
       }
     };
 
@@ -2453,6 +2624,7 @@
     const downloadSingleMp4 = async () => {
       btnSingleDownload.disabled = true;
       loadingBarEl.removeAttribute('hidden');
+      setDownloadingState(true);
       try {
         if (typeof MediaRecorder === 'undefined' || !HTMLCanvasElement.prototype.captureStream) {
           throw new Error('MediaRecorder not supported');
@@ -2505,6 +2677,7 @@
       } finally {
         loadingBarEl.setAttribute('hidden', '');
         btnSingleDownload.disabled = false;
+        setDownloadingState(false);
       }
     };
 
@@ -2524,6 +2697,7 @@
       const dy = e.changedTouches[0].clientY - resTouchStartY;
       if (Math.abs(dy) > Math.abs(dx)) return;
       if (Math.abs(dx) < 50) return;
+      if (isDownloading) return;
       if (dx < 0 && selected.length > 0) openSingle(0);
     }, { passive: true });
 

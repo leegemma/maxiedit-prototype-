@@ -1732,11 +1732,13 @@
       }, 2200);
     };
 
-    const TARGET_WIDTH = 650;
+    const TARGET_WIDTH = 1080;          // bumped from 650 for sharper encoder input
     const SOURCE_WIDTH = 393;
     const SOURCE_HEIGHT = 522;
     const SCALE_OUT = TARGET_WIDTH / SOURCE_WIDTH;
     const OUTPUT_HEIGHT = Math.round(SOURCE_HEIGHT * SCALE_OUT);
+    // Encoder hint — MediaRecorder defaults wildly across browsers.
+    const VIDEO_BITRATE = 6_000_000;    // 6 Mbps target
 
     // Share / anchor-download a Blob as a given file name.
     const saveBlob = async (blob, fileName) => {
@@ -1856,6 +1858,8 @@
     const pickRecorderMime = () => {
       if (typeof MediaRecorder === 'undefined') return null;
       const candidates = [
+        // High profile gets us better compression efficiency at higher resolution.
+        'video/mp4;codecs=avc1.640029',
         'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
         'video/mp4;codecs=avc1.42E01E',
         'video/mp4',
@@ -1907,7 +1911,10 @@
       // -an drops any audio the recorder picked up; -pix_fmt yuv420p for max
       // compatibility; -movflags faststart moves moov atom to the start so the
       // Photos app can scrub without having to download the whole file.
-      await ff.exec(['-i', inputName, '-c:v', 'libx264', '-preset', 'veryfast',
+      // CRF 20 + high profile gives noticeably sharper output than the previous
+      // veryfast/default settings without exploding the file size.
+      await ff.exec(['-i', inputName, '-c:v', 'libx264', '-preset', 'fast',
+                     '-profile:v', 'high', '-crf', '20',
                      '-pix_fmt', 'yuv420p', '-movflags', 'faststart', '-an',
                      'out.mp4']);
       const data = await ff.readFile('out.mp4');
@@ -1979,7 +1986,7 @@
       drawFullImageFrame(ctx, canvas.width, canvas.height, slots);
 
       const stream = canvas.captureStream(30);
-      const recorder = new MediaRecorder(stream, { mimeType: mime });
+      const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: VIDEO_BITRATE });
       const chunks = [];
       recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
 
@@ -2406,9 +2413,9 @@
     // Single output dimensions — both PNG and MP4 use these so video and photo
     // exports come out at exactly the same pixel size. Aspect mirrors the
     // viewport's 80% × 80% content area (393×662 viewport → 314×530 content
-    // → 0.5925 aspect → 650 × 1097).
-    const SINGLE_OUT_W = 650;
-    const SINGLE_OUT_H = 1097;
+    // → 0.5925 aspect). 1080-wide for sharper compression / clearer text.
+    const SINGLE_OUT_W = 1080;
+    const SINGLE_OUT_H = Math.round(SINGLE_OUT_W / 0.5925);  // ≈ 1822
 
     // Single PNG — paint the split layout onto a fresh canvas (same code path
     // as the MP4 export, just one frame). This excludes the on-screen 20%
@@ -2464,7 +2471,7 @@
         drawSingleFrame(ctx, canvas.width, canvas.height, slide);
 
         const stream = canvas.captureStream(30);
-        const recorder = new MediaRecorder(stream, { mimeType: mime });
+        const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: VIDEO_BITRATE });
         const chunks = [];
         recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
         recorder.start();

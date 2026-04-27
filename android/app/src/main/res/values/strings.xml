@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MaxiEdit</string>
+    <string name="title_activity_main">MaxiEdit</string>
+    <string name="package_name">com.leegemma.maxiedit</string>
+    <string name="custom_url_scheme">com.leegemma.maxiedit</string>
+</resources>

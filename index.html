@@ -702,7 +702,7 @@
       -webkit-overflow-scrolling: touch; /* iOS momentum */
       overscroll-behavior-x: contain;
       scrollbar-width: none;
-      background: #fff;
+      background: transparent;   /* no color — page background shows through margins */
     }
     .split-track::-webkit-scrollbar { display: none; }
     .split-slide {
@@ -711,9 +711,9 @@
       scroll-snap-stop: always;
       display: flex;
       flex-direction: column;
-      align-items: center;       /* horizontal center: equal left/right white margin */
-      justify-content: center;   /* vertical center: equal top/bottom white margin */
-      background: #fff;
+      align-items: center;       /* horizontal center */
+      justify-content: center;   /* vertical center */
+      background: transparent;   /* no color — page background shows through margins */
       overflow: hidden;
       min-width: 0;
       box-sizing: border-box;

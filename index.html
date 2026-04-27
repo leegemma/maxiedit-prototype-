@@ -404,6 +404,7 @@
       flex: 1 1 0;
       min-height: 0;
       height: 100%;
+      position: relative;       /* anchor for the empty-state overlay */
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-auto-rows: calc((393px - 8px) / 3);
@@ -467,22 +468,30 @@
       font-size: 9px;
     }
     .thumb .media-badge-video svg { width: 7px; height: 7px; }
-    /* empty state — shown inside picker-grid when no photos loaded */
+    /* empty state — overlays picker-grid so it never participates in grid sizing
+       (otherwise grid-row span + grid-auto-rows of 128px each would force a 3-row
+       384px box that overflows the picker on short viewports and triggers a
+       vertical scrollbar). */
     .picker-empty {
-      grid-column: 1 / -1;
-      grid-row: 1 / 4;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;   /* top-aligned, not vertically centered */
+      justify-content: flex-start;
       gap: 16px;
-      padding: 150px 20px 40px;       /* 150px top breathing room per spec */
+      padding: 110px 20px 40px;
       color: rgba(255, 255, 255, 0.55);
       font-family: inherit;
       font-size: 12px;
       letter-spacing: 0.06em;
       text-align: center;
+      pointer-events: none;
     }
+    .picker-empty button { pointer-events: auto; }
     .picker-empty button {
       padding: 12px 28px;
       background: transparent;

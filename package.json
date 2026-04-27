@@ -4,17 +4,18 @@
   "description": "MaxiEdit Android app — Capacitor wrapper around the web prototype",
   "private": true,
   "scripts": {
-    "sync:www": "rm -rf www && mkdir www && cp index.html www/",
+    "sync:www": "rm -rf www && mkdir www && cp index.html www/index.html",
     "cap:add:android": "npm run sync:www && npx cap add android",
-    "cap:sync": "npm run sync:www && npx cap sync",
+    "cap:sync": "npm run sync:www && npx cap sync android",
     "cap:open:android": "npx cap open android",
-    "cap:run:android": "npm run cap:sync && npx cap run android"
+    "cap:run:android": "npm run cap:sync && npx cap run android",
+    "cap:build:android": "npm run cap:sync && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
-    "@capacitor/android": "^6.1.2",
-    "@capacitor/core": "^6.1.2"
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/core": "^6.2.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.1.2"
+    "@capacitor/cli": "^6.2.1"
   }
 }

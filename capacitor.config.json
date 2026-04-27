@@ -2,7 +2,13 @@
   "appId": "com.leegemma.maxiedit",
   "appName": "MaxiEdit",
   "webDir": "www",
+  "backgroundColor": "#000000",
   "server": {
     "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
   }
 }

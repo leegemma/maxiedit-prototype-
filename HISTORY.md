@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-04-28 | (this commit) | HISTORY.md 도입 — 모든 코드 커밋에 doc 업데이트를 함께 stage하는 정책 명문화 |
+| 2026-04-28 | (this commit) | SKILLS.md 추가 — 어떤 Claude Code 스킬을 언제 쓸지 정책 문서화 |
+| 2026-04-28 | acf43c3 | HISTORY.md 도입 — 모든 코드 커밋에 doc 업데이트를 함께 stage하는 정책 명문화 |
 | 2026-04-28 | 09987ad | CLAUDE.md 전면 갱신 (페이지 모델 / VSCO 톤 / 12_single / 1080-wide 출력 / Capacitor 빌드 반영) |
 | 2026-04-27 | df91177 | Capacitor config / package.json 다듬기 (6.2.1, backgroundColor #000) |
 | 2026-04-27 | dc40d1f | MP4 화질 개선 — 캔버스 1080-wide, videoBitsPerSecond 6 Mbps, ffmpeg fast/high/crf 20 |

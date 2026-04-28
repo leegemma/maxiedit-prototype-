@@ -136,6 +136,8 @@ Every commit that changes code must also update one of:
 
 Doc edits are staged with the source change so each commit is `(source + docs)` as one atomic unit. Don't push code without the docs caught up.
 
+See [SKILLS.md](SKILLS.md) for which Claude Code skills to invoke (and which to skip) for this project.
+
 ## Conventions picked up from the user
 
 - **Icons**: shadcn/ui-style inline Lucide SVGs with `stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round`. Look up paths at https://lucide.dev before guessing. Icons in use: `x` (close), `arrow-left` (back), `rotate-ccw` (reset), `download`, `type` (T, "텍스트"), `play` (video badge), `flip-vertical-2` analogue (뒤집기).

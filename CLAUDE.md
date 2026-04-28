@@ -22,6 +22,8 @@ External dependencies (loaded via CDN, no local install):
 - GitHub repo: https://github.com/leegemma/maxiedit-prototype
 - GitHub Pages: https://leegemma.github.io/maxiedit-prototype/
 
+When sharing the Pages URL with the user, always append a cache-busting `?v=N` query (e.g. `https://leegemma.github.io/maxiedit-prototype/?v=3`). Increment N by 1 with every new push to `origin/main` so iOS Safari can't serve a stale deploy. Do not reset N across conversations — derive it from git history if unknown. The local HTTP server URL (`http://<lan-ip>:8080/`) does not need this.
+
 ## Two working clones
 
 This project lives in two places on disk; both point to the same GitHub remote:
@@ -125,6 +127,7 @@ The whole chrome uses a single design vocabulary:
 - **Tabs**: bottom-border underline indicator (`.cat-tab.is-active { border-bottom: 1px solid #fff }`), no pills.
 - **Indicator dots**: 5×5 muted dot, expands to 18×5 white pill on `.is-active` with a width transition.
 - **Footer button stack** (`.btn-reset` on result, `.btn-text-single`/`.btn-flip` on single): icon on top, 10px uppercase 0.22em label below, `gap: 10px; padding: 10px 20px` so all three line up vertically.
+- **Thumbnail scrim**: every photographic thumbnail used as a card background must sit under a `rgba(0, 0, 0, 0.4)` overlay (40% black) so foreground text and badges stay legible regardless of the underlying image. Implement as a sibling absolute-positioned overlay above the image and below the content (see `.home-card-overlay`), not as a CSS filter — the user wants the photo's own contrast preserved with a flat darkening pass.
 
 When designing a new chrome surface, copy from these tokens. Don't invent a new pill or new border radius.
 

@@ -128,6 +128,14 @@ The whole chrome uses a single design vocabulary:
 
 When designing a new chrome surface, copy from these tokens. Don't invent a new pill or new border radius.
 
+## Documentation policy
+
+Every commit that changes code must also update one of:
+- **`CLAUDE.md`** — when the change is about architecture, behavior, design tokens, conventions, or anything a future Claude session needs to internalize
+- **[HISTORY.md](HISTORY.md)** — for every commit, append a one-line entry (date + commit short hash + summary, newest on top)
+
+Doc edits are staged with the source change so each commit is `(source + docs)` as one atomic unit. Don't push code without the docs caught up.
+
 ## Conventions picked up from the user
 
 - **Icons**: shadcn/ui-style inline Lucide SVGs with `stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round`. Look up paths at https://lucide.dev before guessing. Icons in use: `x` (close), `arrow-left` (back), `rotate-ccw` (reset), `download`, `type` (T, "텍스트"), `play` (video badge), `flip-vertical-2` analogue (뒤집기).

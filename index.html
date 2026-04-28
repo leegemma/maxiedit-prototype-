@@ -41,84 +41,114 @@
       overflow: hidden;
     }
 
-    /* 00_home — VSCO-inspired modern minimal layout */
+    /* 00_home — feature card list */
     #page-home {
       display: flex;
       flex-direction: column;
-      padding: 64px 28px 44px;
+      padding: 24px 20px 32px;
       background: #000;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
-    .home-header {
-      text-align: center;
-      margin-top: 16px;
-    }
-    .home-title {
-      font-family: inherit;
-      font-size: 24px;
-      font-weight: 300;
-      letter-spacing: 0.42em;
-      color: #fff;
-      margin: 0 0 14px;
-      padding-left: 0.42em; /* compensate trailing letter-spacing for visual centering */
-      white-space: nowrap;
-    }
-    .home-tag {
-      font-size: 11px;
-      font-weight: 400;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.45);
-      margin: 0;
-      white-space: nowrap;
-    }
-    .home-rule {
-      width: 28px;
-      height: 1px;
-      background: rgba(255, 255, 255, 0.3);
-      margin: 56px auto 0;
-    }
-    .home-version {
-      margin: 18px 0 0;
-      font-size: 10px;
-      font-weight: 400;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.3);
-      text-align: center;
-    }
-    .home-actions {
-      margin-top: auto;
+    .home-topbar {
       display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .btn-camera, .btn-start {
-      width: 100%;
-      height: 54px;
-      display: inline-flex;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
+      padding: 8px 0 20px;
+    }
+    .home-logo {
+      font-family: inherit;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #fff;
+      margin: 0;
+      line-height: 1;
+    }
+    .home-notif {
+      background: transparent;
+      border: none;
       font-family: inherit;
       font-size: 13px;
-      letter-spacing: 0.16em;
-      border-radius: 4px;
+      color: #fff;
+      padding: 4px 0;
       cursor: pointer;
-      border: 1px solid transparent;
-      transition: opacity 0.15s ease, background-color 0.15s ease;
     }
-    .btn-camera {
-      background: transparent;
-      border-color: rgba(255, 255, 255, 0.32);
-      color: rgba(255, 255, 255, 0.88);
-      font-weight: 400;
+    .home-tabs {
+      display: flex;
+      gap: 6px;
+      margin: 0 0 20px;
     }
-    .btn-camera:active { background: rgba(255, 255, 255, 0.06); }
-    .btn-start {
-      background: #fffb8a;
+    .home-tab {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.55);
+    }
+    .home-tab.is-active {
+      background: #fff;
       color: #111;
-      font-weight: 600;
     }
-    .btn-start:active { opacity: 0.85; }
+    .home-section { margin: 0 0 24px; }
+    .home-section + .home-section { margin-top: 4px; }
+    .home-section-title {
+      font-family: inherit;
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      margin: 0 0 12px;
+    }
+    .home-card {
+      width: 100%;
+      height: 168px;
+      border-radius: 20px;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      padding: 0;
+    }
+    .home-card + .home-card { margin-top: 12px; }
+    .home-card.is-featured {
+      background: #1f55ff;
+      color: #fff;
+    }
+    .home-card.is-featured:active { opacity: 0.9; }
+    .home-card.is-disabled {
+      background: #2e2e2e;
+      color: rgba(255, 255, 255, 0.7);
+      cursor: default;
+    }
+    .home-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .home-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .home-badge.is-new {
+      background: #fff5a3;
+      color: #111;
+    }
+    .home-badge.is-soon {
+      background: #d9d9d9;
+      color: #333;
+    }
 
     /* modal — only used by the textedit popup; sits above the current page */
     .modal {
@@ -928,15 +958,16 @@
       position: relative;
       overflow: hidden;
       background-color: #ffefb7;
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
     }
+    /* Bleed the media 1px past every edge so sub-pixel rounding on the
+       percentage-sized container can never expose the placeholder color. */
+    .split-image > img,
     .split-image > video {
       position: absolute;
-      top: 0; left: 0;
-      width: 100%;
-      height: 100%;
+      top: -1px;
+      left: -1px;
+      width: calc(100% + 2px);
+      height: calc(100% + 2px);
       object-fit: cover;
       display: block;
     }
@@ -1096,16 +1127,32 @@
 <body>
   <div class="app-frame">
   <section class="page" id="page-home" data-name="00_home">
-    <header class="home-header">
-      <h1 class="home-title">MAXIEDIT</h1>
-      <p class="home-tag">make your moment a series</p>
-      <div class="home-rule" aria-hidden="true"></div>
-      <p class="home-version">v1</p>
-    </header>
-    <footer class="home-actions">
-      <button class="btn-camera" type="button" data-name="btn_camera" hidden>사진 찍기</button>
-      <button class="btn-start" type="button" id="btn-start" data-name="btn_start">편집하기</button>
-    </footer>
+    <div class="home-topbar">
+      <h1 class="home-logo">MAXI</h1>
+      <button class="home-notif" type="button" data-name="btn_notification">알림</button>
+    </div>
+    <div class="home-tabs" role="tablist">
+      <button class="home-tab is-active" type="button" role="tab" aria-selected="true">홈</button>
+      <button class="home-tab" type="button" role="tab" aria-selected="false">준비중</button>
+    </div>
+    <section class="home-section">
+      <h2 class="home-section-title">새로 나왔어요</h2>
+      <button class="home-card is-featured" type="button" id="btn-start" data-name="btn_start">
+        <span class="home-badge is-new">New</span>
+        <span class="home-card-title">매거진느낌 피드</span>
+      </button>
+    </section>
+    <section class="home-section">
+      <h2 class="home-section-title">ig 피드 만들기</h2>
+      <button class="home-card is-disabled" type="button" disabled data-name="card_feed_crop">
+        <span class="home-badge is-soon">업데이트 예정</span>
+        <span class="home-card-title">피드자르기</span>
+      </button>
+      <button class="home-card is-disabled" type="button" disabled data-name="card_slide_feed">
+        <span class="home-badge is-soon">업데이트 예정</span>
+        <span class="home-card-title">슬라이드 피드</span>
+      </button>
+    </section>
   </section>
 
   <!-- 02_edit page -->
@@ -2395,8 +2442,10 @@
               v.play().catch(() => {});
             }
           } else {
-            image.style.backgroundImage = `url("${photo.url}")`;
-            image.style.backgroundColor = '';
+            const img = document.createElement('img');
+            img.src = photo.url;
+            img.alt = '';
+            image.appendChild(img);
           }
         }
 

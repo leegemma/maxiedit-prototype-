@@ -4,61 +4,137 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Static HTML prototype of **MaxiEdit** — a mobile photo-editor flow built from Figma designs. Single file: [index.html](index.html). No build, no package manager, no tests. Open `index.html` directly in a browser (or VSCode Live Server) to run.
+**MaxiEdit** — a mobile photo/video collage flow built from Figma designs.
+
+- Web prototype: single file [index.html](index.html). No build, no package manager, no tests for the web side. Open `index.html` directly or via VSCode Live Server.
+- Android wrapper: [Capacitor 6.x](https://capacitorjs.com/) project scaffold ([package.json](package.json), [capacitor.config.json](capacitor.config.json), `www/`). The `android/` folder is generated locally with `npm run cap:add:android` and is git-ignored.
 
 Target viewport is fixed at **393×852** (iPhone portrait). UI text is Korean.
 
 External dependencies (loaded via CDN, no local install):
-- Google Fonts — Inter, Noto Sans KR, Nanum Myeongjo
+- Google Fonts — Inter, Noto Sans KR (used by buttons/UI), Nanum Myeongjo (caption serif inside `full_image`)
 - Sortable.js 1.15.2 — long-press drag-reorder for selected thumbnails
+- html2canvas 1.4.1 — full result PNG export
+- ffmpeg.wasm 0.12.10 (lazy) — MP4 transcode fallback when MediaRecorder doesn't emit MP4
+
+## Live URLs
+
+- GitHub repo: https://github.com/leegemma/maxiedit-prototype
+- GitHub Pages: https://leegemma.github.io/maxiedit-prototype/
+
+## Two working clones
+
+This project lives in two places on disk; both point to the same GitHub remote:
+
+- **iCloud copy** (web edits): `/Users/dreaming/Library/Mobile Documents/com~apple~CloudDocs/공동 작업/ClaudeProject/Test`
+- **Clean clone** (Android build, no Korean/spaces in path): `~/dev/maxiedit-prototype-`
+
+Android Studio cannot start an IDE inside the iCloud + Korean path, so all native build commands (`npm install`, `npm run cap:add:android`, `cap:open:android`, `cap:build:android`) MUST be run from `~/dev/maxiedit-prototype-`. Web edits/commits can happen in either; pull on the other side to stay in sync.
 
 ## Architecture
 
-### Screens as stacked overlays
+### Pages, not overlays
 
-Frames from Figma, implemented as a base screen + three overlays (all absolutely positioned, `hidden` by default, toggled via `.is-open`):
+The app navigates between four discrete pages plus one modal. **Only one page is visible at a time — toggled via the `[hidden]` attribute** (with a global `[hidden] { display: none !important }` rule for safety on iOS Safari). The earlier overlay/z-index stacking model was removed because mobile Safari rendered every overlay simultaneously on shorter viewports.
 
-- `00_home` — base screen (`.screen`) — home with `btn_camera` (inert) + `btn_start`
-- `02_edit` — overlay (`z-index: 100`), opened by `btn_start`
-- `10_result` — overlay (`z-index: 200`), opened by bottom `btn_next` in `02_edit`
-- `11_textedit` — modal dialog (`z-index: 300`), opened by `btn_text` in `10_result`
+| Page id | data-name | Reached from |
+|---|---|---|
+| `#page-home` | `00_home` | initial route |
+| `#page-edit` | `02_edit` | home `btn_start` |
+| `#page-result` | `10_result` | edit `btn_next` (≥1 photo selected) |
+| `#page-single` | `12_result_single` | result indicator dot or slot tap |
+| `#textedit-overlay` | `11_textedit` (modal) | `btn_text` on result/single |
+| `#download-modal` | (modal) | `btn_download` on result/single |
 
-Close handlers: overlay-background click + Escape key. The top-most open overlay closes first (keydown handler checks textedit → result → edit).
+`goTo(name)` is the single navigation primitive — it sets `hidden` on every page except the target, dismisses textedit if leaving result, runs the auto photo-picker on first edit entry, and triggers the bottom-bar slide-up animation on `02_edit`.
+
+The whole app sits inside `.app-frame` (393×852, capped at `100dvh` to track the iOS Safari URL bar). `.app-frame { overflow: hidden }` clips to the phone-shaped viewport when the browser is wider.
 
 ### `02_edit` internal layer stack
 
-Inside `.edit`, three stacked layers with deliberate z-index:
+Inside the edit page (top → bottom):
 
-1. Base (`.preview`, `z:1`) — scaled-down `full_image` preview. Aspect ratio locked via `transform: scale(var(--preview-scale))` on a 393×522 inner element inside a clipping `.preview-viewport` whose dimensions are `calc(393px * var(--preview-scale))` and `calc(522px * var(--preview-scale))`.
-2. `bottom_layer_imageList` (`z:2`) — category tabs + picker grid. Picker shows ~3.3 rows, scrolls vertically with iOS momentum. Grid rows pinned to square via `grid-auto-rows: calc((393px - 8px) / 3)` (don't rely on `aspect-ratio` alone — unreliable in grid context).
-3. `bottom_layer_select` (`z:3`) — sticky bottom bar. Exactly 4 thumbs visible (`flex: 0 0 248px` = 4×56 + 3×8 gap); 5th+ scroll horizontally with snap. Long-press reorders via Sortable.js (`delay: 300`).
-
-Header (`edit-header`, `z:4`) floats above preview with close-X and reset buttons.
-
-Layer names mirror Figma names; users reference them that way in prompts.
+1. **Header** (`.edit-header`, `z:4`, `top: 12`) — close-X icon button (`btn-edit-close`) and reset (`btn-reset-top`, RotateCcw + 초기화 label)
+2. **`preview`** (`z:1`, `top: 69`) — scaled-down `full_image` mirror at `--preview-scale: 0.4` via `transform: scale()` on a 393×522 inner inside a clipping viewport
+3. **`bottom_layer_imageList`** (`z:2`, `top: calc(69px + 522px*0.4)` ≈ 277.8) — category tabs + picker grid. Picker grid uses `grid-template-columns: repeat(3, 1fr)` + `grid-auto-rows: calc((393px - 8px) / 3)` for square cells (don't rely on `aspect-ratio` alone; flaky in grid). Empty state (`.picker-empty`) is `position: absolute; inset: 0` overlaying the grid so it never participates in row sizing.
+4. **`bottom_layer_select`** (`z:3`, `bottom: 0`) — sticky bottom bar. Exactly 4 thumbs visible (`flex: 0 0 248px` = 4×56 + 3×8 gap); 5th+ scroll horizontally with snap. Long-press reorders via Sortable.js (`delay: 300`). Slides up on entry via `bls-slide-up` keyframe with `cubic-bezier(0.22, 0.9, 0.3, 1)` for an iOS-like inertial feel; `goTo('edit')` toggles `.is-entering` with a forced reflow so it replays on every re-entry.
 
 ### State model
 
-Two orthogonal state arrays, each with a single dedicated renderer:
+Three orthogonal state shapes:
 
-- **`selected[]`** — ordered photo indices (drives check icons, preview/result slots, thumbnail bar, counter). `render()` rebuilds all derived DOM. `MAX_SELECT = 9` enforced in `togglePhoto()`. Sortable `onEnd` does splice-out → splice-in then calls `render()`.
-- **`textLabels[]`** — 9 strings shown in the `full_image` bottom legend (columns: left 4 / right 5). `renderTextareas()` rebuilds both `#preview-textarea` and `#result-textarea` from this array. Edited via the `11_textedit` modal (confirm writes back, cancel is a no-op).
+- **`photos[]`** — items the user picked from the device. Each entry: `{ url, originalUrl, name, type: 'image' | 'video', duration? }`. For videos, `url` is a JPEG thumbnail blob (first frame, captured via a hidden `<video>` element + canvas) and `originalUrl` is the playable source. `loadPhotoFiles(fileList, append?)` populates this; the `+` tile in the picker calls it with `append: true`. Photos are reset (`revokeMedia` on every entry) when the user closes edit back to home.
+- **`selected[]`** — ordered photo indices (0..N-1, max 9). Drives picker check icons (`icon_check_on`/`off` + `data-selectNumber`), preview/result slot fills, thumbnail bar, counter on `다음 N/9`, and the result-page indicator. Sortable's `onEnd` does splice-out → splice-in then calls `render()`.
+- **`textLabels[]`** — 9 caption strings rendered into the `full_image` bottom legend (left col 1-4 / right col 5-9) and into each single-view slide. Edited via the `11_textedit` modal: pass `null` from `btn-text-tool` (full result) for all 9 rows, or pass `currentSingleIdx` from `btn-text-single` for that single row only. `confirmTextedit()` writes back via `data-index`, calls `renderTextareas()`, and patches the matching `.split-text` in place so flip state and scroll position survive.
 
-When adding derived UI, plug into the matching renderer — don't add a third source of truth.
+When adding derived UI, plug into the matching renderer — don't add a fourth source of truth.
 
 ### Shared `full_image` component
 
 The 3×3 color-slot grid + textarea legend is rendered identically in two places:
-- `10_result` — full 393×522 size, positioned absolute at top: 94
+- `10_result` — full 393×522 size, positioned absolute at `top: 69`
 - `02_edit` preview — same DOM structure inside `.preview-viewport`, scaled via CSS transform
 
-`buildResultStyleGrid(target)` populates both grids; `renderGridSlots(gridEl)` syncs their colors/opacity to `selected`. When editing grid visuals, change in one place.
+`buildResultStyleGrid(target, onCellClick?)` populates both grids; `renderGridSlots(gridEl, { animateVideos })` syncs their colors/opacity to `selected[]`. The result grid passes `animateVideos: true` so video slots get a live `<video autoplay loop muted playsinline>` element capped at `VIDEO_CLIP_SECONDS` (currently 2). When editing grid visuals, change in one place.
+
+### `12_result_single` (split view)
+
+A horizontal scroll-snap track (`#split-track`) holding one `.split-slide` per selected slot. Each slide is `align-items: center; justify-content: center` with the image (`flex: 0 0 40%`, `width: 80%`) on top and the caption (`flex: 0 0 40%`, `width: 80%`) below — the 80% × 80% block sits centered on a transparent slide so the page background shows through margins. Toggling `.is-flipped` on the current slide flips image and text via `flex-direction: column-reverse`. Right-swipe at slide 0 (scrollLeft 0) returns to `10_result`; the indicator's leftmost dot does the same on click.
+
+### Outputs
+
+PNG/MP4 always exit at the same dimensions per surface:
+
+| Surface | Width | Height | Aspect rationale |
+|---|---|---|---|
+| Full (10_result) | 1080 | 1434 | matches `full_image` 393×522 ratio |
+| Single (12_result_single) | 1080 | 1822 | matches the on-screen 80% × 80% content (393:662 viewport → 0.5925) |
+
+Bumped from the original 650-wide because at 650×… text/edges were getting compressed into mush. `videoBitsPerSecond: 6_000_000` is hinted to MediaRecorder; ffmpeg fallback uses `-c:v libx264 -preset fast -profile:v high -crf 20 -movflags faststart -an`.
+
+`drawSingleFrame(ctx, w, h, slide)` is the canvas painter shared by single PNG and MP4 export — fills white, paints either the live video frame (if `videoEl.videoWidth > 0 && readyState >= HAVE_CURRENT_DATA`) or the still thumbnail image as fallback into the image half, then white text panel + Nanum Myeongjo caption in the other half. Honors `slide.flipped`.
+
+`drawFullImageFrame(ctx, w, h, slots)` paints the 3×3 grid + textarea legend the same way for full MP4 export. Full PNG still uses `html2canvas` since it captures the whole legend DOM faithfully.
+
+### Download flow
+
+`btn-download` (and single `btn-single-download`) opens **one shared modal** with: 사진으로 저장 / 영상으로 저장 / 모두 저장 / 취소.
+
+- **사진** dispatches to `downloadPng()` or `downloadSinglePng()` based on `currentPage`.
+- **영상** dispatches to `downloadMp4()` / `downloadSingleMp4()`. Both record a 2s canvas stream, fall back to ffmpeg.wasm transcode (lazy-loaded from CDN, ~25 MB on first use) when MediaRecorder doesn't emit MP4 natively.
+- **모두 저장** — `downloadAllContent()` saves the full result first (PNG if all photos, MP4 if any video) then iterates each selected slot saving as PNG (image) or MP4 (video). Mobile share sheets fire one at a time.
+
+`saveBlob(blob, fileName)` prefers `navigator.share({ files })` so iOS gets the native share sheet with "Save Image" / "Save Video"; falls back to anchor-download elsewhere.
 
 ### `11_textedit` modal behavior
 
-- Each row renders `(N)` as a separate **`<span class="textedit-num">`** plus the editable text in an `<input>`. Structural separation is why the number prefix cannot be edited — don't try to enforce this with JS.
+- Each row renders `(N)` as a separate `<span class="textedit-num">` plus the editable text in an `<input>`. Structural separation is why the number prefix cannot be edited — don't try to enforce this with JS.
 - Inputs have `autocomplete/autocorrect/autocapitalize="off"` to suppress mobile auto-correction.
-- Confirm writes every input back to `textLabels` by `data-index`, then calls `renderTextareas()`.
+- Both `.textedit-num` and `.textedit-input` use `font-family: inherit` (Inter / Noto Sans KR) — match the rest of the chrome, not the Nanum Myeongjo caption font.
+- Confirm writes every input back to `textLabels` by `data-index`, then calls `renderTextareas()` and patches the visible single slide's `.split-text` in place.
+
+## Visual conventions (VSCO-inspired)
+
+The whole chrome uses a single design vocabulary:
+
+- **Canvas**: pure black (`#000`) page surfaces with translucent panels on top.
+- **Typography**: Inter / Noto Sans KR. Light weights (300–500) at small sizes (10–13px) with **wide letter-spacing** (0.16em–0.42em). Headlines use `text-transform: uppercase` for English; Korean stays as-is.
+- **Hairlines**: `1px solid rgba(255,255,255,0.32)` for outlined buttons; `1px solid rgba(255,255,255,0.08)` for dividers. Ghost buttons use transparent fill with a hairline border.
+- **Single primary CTA**: `#fffb8a` yellow (`btn-start`, `btn-next-main`, `btn-download`, `btn-textedit-confirm`, `btn-download-png` in the modal). Everything else is muted-white text on transparent.
+- **Borders**: every button uses `border-radius: 4px` regardless of size (user preference, overrides pill defaults).
+- **Tabs**: bottom-border underline indicator (`.cat-tab.is-active { border-bottom: 1px solid #fff }`), no pills.
+- **Indicator dots**: 5×5 muted dot, expands to 18×5 white pill on `.is-active` with a width transition.
+- **Footer button stack** (`.btn-reset` on result, `.btn-text-single`/`.btn-flip` on single): icon on top, 10px uppercase 0.22em label below, `gap: 10px; padding: 10px 20px` so all three line up vertically.
+
+When designing a new chrome surface, copy from these tokens. Don't invent a new pill or new border radius.
+
+## Conventions picked up from the user
+
+- **Icons**: shadcn/ui-style inline Lucide SVGs with `stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round`. Look up paths at https://lucide.dev before guessing. Icons in use: `x` (close), `arrow-left` (back), `rotate-ccw` (reset), `download`, `type` (T, "텍스트"), `play` (video badge), `flip-vertical-2` analogue (뒤집기).
+- **No emojis** in code or UI unless explicitly requested.
+- **Korean folder names** in iCloud break Android Studio; build only from `~/dev/`.
+- When adding assets, drop them in [images/](images/); the user refers to them by filename (e.g. "11_textedit.png 참고"). These are reference screenshots only — not bundled into the web app.
+- The user shares Figma screenshots directly in chat as a fallback when MCP rate-limits.
 
 ## Figma ↔ Code workflow
 
@@ -69,14 +145,22 @@ When the user shares a Figma URL:
 - Start with `get_metadata` for structure, then `get_design_context` for the node you're implementing.
 - Figma responses are React+Tailwind — adapt to this project's vanilla HTML/CSS, don't copy verbatim.
 
-**Rate limit**: The Figma account is on Starter plan and hits tool-call limits mid-session. When limited, ask the user for a screenshot (drop under [images/](images/)) or the structure rather than retrying repeatedly. The user has frequently pasted screenshots directly into chat as an alternative.
+**Rate limit**: The Figma account is on Starter plan and hits tool-call limits mid-session. When limited, ask the user for a screenshot or the structure rather than retrying repeatedly.
 
-Users identify elements by their **Figma node names** (e.g. `btn_start`, `btn_next`, `btn_text`, `full_image`, `bottom_layer_select`, `icon_check_on`). Preserve these as `data-name` attributes on the corresponding DOM elements so references stay traceable across renames.
+Users identify elements by their **Figma node names** (`btn_start`, `btn_next`, `btn_text`, `full_image`, `bottom_layer_select`, `icon_check_on`, etc.). Preserve these as `data-name` attributes on the corresponding DOM elements so references stay traceable across renames.
 
-## Conventions picked up from the user
+## Android build (Capacitor)
 
-- **Icons**: shadcn/ui style = inline Lucide SVGs with `stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round`. Look up paths at https://lucide.dev before guessing. Icons in use: `x` (close), `arrow-left` (back), `rotate-ccw` (reset), `download`, `type` (T, "텍스트").
-- **Button radius**: all button-shaped elements use `border-radius: 4px` (user preference, overrides pill/circle defaults). Applies to `.btn-*`, `.cat-tab`, `.thumb-remove`.
-- **File creation path**: new project files go under `/Users/dreaming/Library/Mobile Documents/com~apple~CloudDocs/공동 작업/ClaudeProject/`.
-- **No emojis** in code or UI unless explicitly requested.
-- When adding assets, drop them in [images/](images/); the user refers to them by filename (e.g. "11_textedit.png 참고").
+From `~/dev/maxiedit-prototype-`:
+
+```bash
+npm install                  # one-time
+npm run cap:add:android      # generates android/ on first run
+npm run cap:open:android     # opens in Android Studio
+# or
+npm run cap:build:android    # CLI build → android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+`npm run cap:sync` after every `index.html` change to push the new web bundle into `android/app/src/main/assets/public`.
+
+Capacitor config notes: `androidScheme: https`, `backgroundColor: #000` (no white flash on launch), `captureInput: true` for keyboard-aware layout. JDK 17 is the path of least resistance for Gradle; Temurin 21 also works.

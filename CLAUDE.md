@@ -143,7 +143,7 @@ See [SKILLS.md](SKILLS.md) for which Claude Code skills to invoke (and which to 
 
 ## Conventions picked up from the user
 
-- **Icons**: shadcn/ui-style inline Lucide SVGs with `stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round`. Look up paths at https://lucide.dev before guessing. Icons in use: `x` (close), `arrow-left` (back), `rotate-ccw` (reset), `download`, `type` (T, "텍스트"), `play` (video badge), `flip-vertical-2` analogue (뒤집기).
+- **Icons**: inline Heroicons outline SVGs (24×24, `stroke-linecap` and `stroke-linejoin` set to `round` on each `<path>`) with CSS `stroke: currentColor; fill: none; stroke-width: 1.5`. Look up paths at https://heroicons.com before guessing. Icons in use: `bell` (notification), `x-mark` (close), `arrow-left` (back), `arrow-path` (reset), `arrow-down-tray` (download), `arrows-right-left` (뒤집기), `photo` (사진 저장), `film` (영상 저장), `squares-2x2` (모두 저장), `play` (video badge). The "텍스트" T glyph stays as a custom path (no direct Heroicons equivalent), and the toast success ring/check keeps its bespoke animated structure.
 - **No emojis** in code or UI unless explicitly requested.
 - **Korean folder names** in iCloud break Android Studio; build only from `~/dev/`.
 - When adding assets, drop them in [images/](images/); the user refers to them by filename (e.g. "11_textedit.png 참고"). These are reference screenshots only — not bundled into the web app.

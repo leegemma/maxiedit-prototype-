@@ -717,7 +717,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 8px 16px;
+      padding: 8px 24px 8px 16px;
       background: rgba(0, 0, 0, 0.78);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
@@ -748,7 +748,7 @@
     }
     .selected-thumbs::-webkit-scrollbar { display: none; }
     .selected-thumbs:empty::before {
-      content: '선택된 사진 없음';
+      content: '선택된 사진 or 영상 없음';
       color: #888;
       font-size: 12px;
       align-self: center;
@@ -1592,7 +1592,7 @@
         empty.className = 'picker-empty';
         empty.innerHTML =
           '<span class="picker-empty-icon" aria-hidden="true">+</span>' +
-          '<span class="picker-empty-text">탭하여 사진 선택</span>';
+          '<span class="picker-empty-text">탭하여 사진 or 영상 선택</span>';
         empty.addEventListener('click', () => photoInput.click());
         pickerGrid.appendChild(empty);
         return;

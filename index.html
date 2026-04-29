@@ -127,7 +127,7 @@
       font-family: inherit;
       font-size: 13px;
       font-weight: 500;
-      padding: 6px 14px;
+      padding: 6px 10px;
       border-radius: 4px;
       border: none;
       cursor: pointer;
@@ -455,7 +455,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 16px;
+      padding: 0 16px 0 8px;
       z-index: 4;
     }
     /* VSCO-style icon buttons */
@@ -472,7 +472,6 @@
       border-radius: 4px;
       font-size: 12px;
       font-weight: 400;
-      letter-spacing: 0.18em;
       text-transform: uppercase;
       transition: opacity 0.15s, background-color 0.15s;
     }
@@ -488,6 +487,13 @@
       stroke-linecap: round;
       stroke-linejoin: round;
       fill: none;
+    }
+    /* Smaller left padding so the X sits closer to the screen edge than the
+       symmetric internal padding would imply. */
+    #btn-edit-close {
+      padding: 0 12px 1px 8px;
+      height: 32px;
+      box-sizing: border-box;
     }
 
     /* preview (full_image scaled, aspect ratio preserved) */
@@ -717,7 +723,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 8px 24px 8px 16px;
+      padding: 8px 0 8px 16px;
       background: rgba(0, 0, 0, 0.78);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
@@ -732,9 +738,7 @@
       animation: bls-slide-up 0.55s cubic-bezier(0.22, 0.9, 0.3, 1) both;
     }
     .selected-thumbs {
-      flex: 0 0 248px;
-      width: 248px;
-      max-width: 248px;
+      flex: 1 1 0;            /* fill all space left of the next button (with 12px gap) */
       min-width: 0;
       display: flex;
       gap: 8px;
@@ -814,15 +818,18 @@
 
     .btn-next-main {
       flex-shrink: 0;
-      height: 42px;
-      padding: 0 20px;
-      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      padding: 0 12px 1px;
+      box-sizing: border-box;
+      border-radius: 3px;
       background: #fffb8a;
       color: #111;
       font-family: inherit;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
-      letter-spacing: 0.18em;
       text-transform: uppercase;
       border: none;
       cursor: pointer;
@@ -850,20 +857,21 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      border-radius: 4px;
+      gap: 6px;
+      border-radius: 3px;
       font-family: inherit;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
-      letter-spacing: 0.18em;
       text-transform: uppercase;
       border: none;
       cursor: pointer;
       transition: opacity 0.15s, background-color 0.15s;
     }
     .btn-close {
-      left: 16px;
-      padding: 8px 10px;
+      left: 8px;
+      padding: 0 12px 1px 8px;
+      height: 32px;
+      box-sizing: border-box;
       background: transparent;
       color: rgba(255, 255, 255, 0.92);
       font-weight: 400;
@@ -872,8 +880,9 @@
     .btn-close:active { opacity: 0.7; }
     .btn-download {
       right: 16px;
-      padding: 0 18px;
-      height: 38px;
+      padding: 0 12px 1px;
+      height: 32px;
+      box-sizing: border-box;
       background: #fffb8a;
       color: #111;
       font-weight: 600;
@@ -969,16 +978,13 @@
     #result-textarea { cursor: pointer; }
 
     .btn-reset {
-      position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: 10px 20px;
+      gap: 6px;
+      padding: 4px 4px;
       background: transparent;
       border: none;
       cursor: pointer;
@@ -1000,7 +1006,6 @@
     .btn-reset-label {
       font-size: 11px;
       font-weight: 400;
-      letter-spacing: 0.22em;
       text-transform: uppercase;
       color: rgba(255, 255, 255, 0.88);
     }
@@ -1009,10 +1014,10 @@
     .single { position: relative; width: 100%; height: 100%; background: #000; overflow: hidden; color: #fff; }
     .split-track {
       position: absolute;
-      top: 60px;
+      top: 69px;                 /* matches 10_result .full-image top */
       left: 0;
       right: 0;
-      bottom: 130px;
+      height: 522px;             /* matches 10_result .full-image height */
       display: flex;
       overflow-x: auto;
       overflow-y: hidden;
@@ -1038,8 +1043,8 @@
     }
     .split-slide.is-flipped { flex-direction: column-reverse; }
     .split-image {
-      width: 80%;                /* 80% of slide width */
-      flex: 0 0 40%;             /* 40% of slide height → 50/50 of total 80% block */
+      width: 100%;               /* full slide width — matches 10_result full_image */
+      flex: 0 0 50%;             /* top half of slide */
       min-height: 0;
       position: relative;
       overflow: hidden;
@@ -1058,8 +1063,8 @@
       display: block;
     }
     .split-text {
-      width: 80%;                /* matches image panel width */
-      flex: 0 0 40%;             /* matches image panel height */
+      width: 100%;               /* matches image panel width */
+      flex: 0 0 50%;             /* bottom half of slide */
       min-height: 0;
       display: flex;
       align-items: center;
@@ -1073,17 +1078,21 @@
       text-align: center;
       word-break: keep-all;
       box-sizing: border-box;
+      cursor: pointer;
     }
     .indicator {
       position: absolute;
       left: 0;
       right: 0;
-      bottom: 95px;
       display: flex;
       justify-content: center;
       gap: 6px;
     }
     .indicator:empty { display: none; }
+    /* Both 10_result .full-image and 12_single .split-track end at top 69+522=591;
+       indicator sits 24px below at top 615 on both pages. */
+    #result-indicator,
+    #single-indicator { top: 615px; }
     .indicator-dot {
       width: 5px;
       height: 5px;
@@ -1095,7 +1104,8 @@
       transition: background-color 0.15s, width 0.18s ease;
     }
     .indicator-dot.is-active { background: #fff; width: 18px; border-radius: 3px; }
-    .single-controls {
+    .single-controls,
+    .result-controls {
       position: absolute;
       left: 0;
       right: 0;
@@ -1107,7 +1117,8 @@
       overflow-x: auto;
       scrollbar-width: none;
     }
-    .single-controls::-webkit-scrollbar { display: none; }
+    .single-controls::-webkit-scrollbar,
+    .result-controls::-webkit-scrollbar { display: none; }
     /* Matches .btn-reset exactly so both result footers align vertically */
     .btn-text-single, .btn-flip {
       flex-shrink: 0;
@@ -1123,7 +1134,6 @@
       cursor: pointer;
       font-size: 11px;
       font-weight: 400;
-      letter-spacing: 0.18em;
       text-transform: uppercase;
       font-family: inherit;
       transition: opacity 0.15s;
@@ -1320,10 +1330,12 @@
 
       <div class="indicator" id="result-indicator"></div>
 
-      <button class="btn-reset" type="button" id="btn-text-tool" data-name="btn_text">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
-        <span class="btn-reset-label">텍스트</span>
-      </button>
+      <div class="result-controls">
+        <button class="btn-reset" type="button" id="btn-text-tool" data-name="btn_text">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
+          <span class="btn-reset-label">텍스트</span>
+        </button>
+      </div>
     </section>
   </section>
 
@@ -1660,14 +1672,20 @@
       const pos = selected.indexOf(index);
       if (pos >= 0) {
         selected.splice(pos, 1);
+        render();
       } else {
         if (selected.length >= MAX_SELECT) {
           showToast('최대 9개까지 선택할 수 있어요.', { showIcon: false });
           return;
         }
         selected.push(index);
+        render();
+        // bottom_layer_select shows 4 thumbs; from the 5th on, scroll the bar
+        // so the newly added thumb is exposed at the right edge.
+        requestAnimationFrame(() => {
+          thumbsEl.scrollTo({ left: thumbsEl.scrollWidth, behavior: 'smooth' });
+        });
       }
-      render();
     };
 
     const renderGridSlots = (gridEl, { animateVideos = false } = {}) => {
@@ -2552,6 +2570,7 @@
         const text = document.createElement('div');
         text.className = 'split-text';
         text.textContent = textLabels[i] || '';
+        text.addEventListener('click', () => openTextedit(i));
 
         const photo = photos[photoIdx];
         if (photo) {
@@ -2673,13 +2692,14 @@
     // Paint the split-slide layout (image/video half + text half, respecting flip) onto
     // an arbitrary 2D canvas context. Used by MP4 and GIF export paths.
     const drawSingleFrame = (ctx, w, h, slide) => {
+      // 1080×1434 canvas split 50/50 horizontally — same proportions as the
+      // on-screen split-slide (which is 393×522 with image and text panels
+      // each 50%). Honors slide.flipped.
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, w, h);
       const halfH = Math.floor(h / 2);
       const imgY = slide.flipped ? halfH : 0;
       const textY = slide.flipped ? 0 : halfH;
-      // Prefer the live video element when its frame is decoded; otherwise fall back
-      // to the still thumbnail image so the upper half is never blank.
       if (slide.type === 'video' && slide.videoEl && slide.videoEl.videoWidth > 0 && slide.videoEl.videoHeight > 0 && slide.videoEl.readyState >= 2) {
         drawImageCover(ctx, slide.videoEl, 0, imgY, w, halfH);
       } else if ((slide.type === 'video' || slide.type === 'image') && slide.img) {
@@ -2765,11 +2785,10 @@
     };
 
     // Single output dimensions — both PNG and MP4 use these so video and photo
-    // exports come out at exactly the same pixel size. Aspect mirrors the
-    // viewport's 80% × 80% content area (393×662 viewport → 314×530 content
-    // → 0.5925 aspect). 1080-wide for sharper compression / clearer text.
+    // exports come out at exactly the same pixel size. Matches 10_result's
+    // 1080×1434 (393:522 aspect) so single and full exports share dimensions.
     const SINGLE_OUT_W = 1080;
-    const SINGLE_OUT_H = Math.round(SINGLE_OUT_W / 0.5925);  // ≈ 1822
+    const SINGLE_OUT_H = 1434;
 
     // Single PNG — paint the split layout onto a fresh canvas (same code path
     // as the MP4 export, just one frame). This excludes the on-screen 20%

@@ -81,7 +81,14 @@ The 3×3 color-slot grid + textarea legend is rendered identically in two places
 
 ### `12_result_single` (split view)
 
-A horizontal scroll-snap track (`#split-track`) holding one `.split-slide` per selected slot. Each slide is `align-items: center; justify-content: center` with the image (`flex: 0 0 40%`, `width: 80%`) on top and the caption (`flex: 0 0 40%`, `width: 80%`) below — the 80% × 80% block sits centered on a transparent slide so the page background shows through margins. Toggling `.is-flipped` on the current slide flips image and text via `flex-direction: column-reverse`. Right-swipe at slide 0 (scrollLeft 0) returns to `10_result`; the indicator's leftmost dot does the same on click.
+A horizontal scroll-snap track (`#split-track`) holding one `.split-slide` per selected slot. The track is sized **identically to `10_result`'s `.full-image`**: `top: 69px; height: 522px` so the visible preview area is exactly 393×522 on both pages and the indicator (`top: 615px`) lands 24px below either content area.
+
+Each `.split-slide` is full-width (`flex: 0 0 100%`) and split 5:5:
+
+- `.split-image` — `width: 100%`, `flex: 0 0 50%` (top half = 261px, full slide width)
+- `.split-text` — `width: 100%`, `flex: 0 0 50%` (bottom half; tappable, opens `11_textedit` for that slot's caption)
+
+Toggling `.is-flipped` on the current slide flips image and text via `flex-direction: column-reverse`. Right-swipe at slide 0 (scrollLeft 0) returns to `10_result`; the indicator's leftmost dot does the same on click.
 
 ### Outputs
 
@@ -90,11 +97,11 @@ PNG/MP4 always exit at the same dimensions per surface:
 | Surface | Width | Height | Aspect rationale |
 |---|---|---|---|
 | Full (10_result) | 1080 | 1434 | matches `full_image` 393×522 ratio |
-| Single (12_result_single) | 1080 | 1822 | matches the on-screen 80% × 80% content (393:662 viewport → 0.5925) |
+| Single (12_result_single) | 1080 | 1434 | same dimensions as 10_result; canvas is split 50/50 to mirror the on-screen image/text panels (each 1080×717 in output) |
 
 Bumped from the original 650-wide because at 650×… text/edges were getting compressed into mush. `videoBitsPerSecond: 6_000_000` is hinted to MediaRecorder; ffmpeg fallback uses `-c:v libx264 -preset fast -profile:v high -crf 20 -movflags faststart -an`.
 
-`drawSingleFrame(ctx, w, h, slide)` is the canvas painter shared by single PNG and MP4 export — fills white, paints either the live video frame (if `videoEl.videoWidth > 0 && readyState >= HAVE_CURRENT_DATA`) or the still thumbnail image as fallback into the image half, then white text panel + Nanum Myeongjo caption in the other half. Honors `slide.flipped`.
+`drawSingleFrame(ctx, w, h, slide)` is the canvas painter shared by single PNG and MP4 export — fills white, paints either the live video frame (if `videoEl.videoWidth > 0 && readyState >= HAVE_CURRENT_DATA`) or the still thumbnail image as fallback into the image half (top 50% of canvas, or bottom when `slide.flipped`), then fills the other half white and centers the Nanum Myeongjo caption in it.
 
 `drawFullImageFrame(ctx, w, h, slots)` paints the 3×3 grid + textarea legend the same way for full MP4 export. Full PNG still uses `html2canvas` since it captures the whole legend DOM faithfully.
 

@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-04-30 | (this commit) | TODO #9 처리 — `docs/licenses.html` 신규 (Sortable / html2canvas / ffmpeg.wasm / Capacitor / Heroicons + Inter / Noto Sans KR / Nanum Myeongjo). CLAUDE.md "External dependencies"에서 링크 |
+| 2026-04-30 | (this commit) | TODO #5 정책 수립 — git 히스토리에 키 자료 0 확인 후 `.gitignore`에 `*.keystore` / `*.jks` / `keystore.properties` / `key.properties` 패턴 사전 보강. CLAUDE.md "Android signing" 섹션 신규 (파일 위치, `keystore.properties` 분리 패턴, 2-location 백업 규칙, 분기 무결성 확인) |
+| 2026-04-30 | d3bda58 | TODO #9 처리 — `docs/licenses.html` 신규 (Sortable / html2canvas / ffmpeg.wasm / Capacitor / Heroicons + Inter / Noto Sans KR / Nanum Myeongjo). CLAUDE.md "External dependencies"에서 링크 |
 | 2026-04-30 | 84112c8 | TODO #4 1단계 — `<script>` 최상단에 `error` / `unhandledrejection` 전역 핸들러 추가 (현재는 console.error로만, Sentry 후킹 지점 확보). CLAUDE.md "Error handling" 섹션 신규 |
 | 2026-04-30 | c28a1b7 | TODO #6 처리 — `.github/dependabot.yml` 추가 (npm + github-actions, weekly, label `deps`, semver-major skip) |
 | 2026-04-30 | b9536b1 | TODO #1 처리 — Sortable.js 1.15.2 / html2canvas 1.4.1 `<script>`에 SRI(sha384) + crossorigin="anonymous" 적용. CLAUDE.md "External dependencies"에 해시 갱신 규칙 한 줄 추가. ffmpeg.wasm은 lazy라 제외 |

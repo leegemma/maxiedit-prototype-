@@ -16,3 +16,9 @@ android/app/release/
 android/captures/
 *.apk
 *.aab
+
+# Android signing — never commit keystore or its credentials
+*.keystore
+*.jks
+keystore.properties
+key.properties

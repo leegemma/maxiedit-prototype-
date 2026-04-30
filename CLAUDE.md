@@ -184,6 +184,22 @@ When the user shares a Figma URL:
 
 Users identify elements by their **Figma node names** (`btn_start`, `btn_next`, `btn_text`, `full_image`, `bottom_layer_select`, `icon_check_on`, etc.). Preserve these as `data-name` attributes on the corresponding DOM elements so references stay traceable across renames.
 
+## Android signing
+
+Release signing is **not** wired up yet (the current Capacitor scaffold only builds debug APKs). When it lands, follow these rules so the keystore never leaks into git:
+
+- Keystore file (`*.keystore` / `*.jks`) lives at `android/app/maxiedit-release.keystore`. Never check it in — `.gitignore` already excludes the patterns.
+- Credentials live in a separate `android/keystore.properties` (also gitignored). `app/build.gradle` reads it via `Properties()` so the values never appear in source. Skeleton:
+  ```properties
+  # android/keystore.properties — DO NOT commit
+  storeFile=maxiedit-release.keystore
+  storePassword=...
+  keyAlias=maxiedit
+  keyPassword=...
+  ```
+- Back the keystore + credentials up in **two places**: a password manager (1Password / Bitwarden) and an encrypted archive on a separate device or cloud. **Losing the keystore means losing the ability to ship updates under the same package id** (`com.leegemma.maxiedit`); recovery is impossible.
+- Verify backup integrity quarterly. Add a calendar reminder on the day signing is set up.
+
 ## Android build (Capacitor)
 
 From `~/dev/maxiedit-prototype-`:

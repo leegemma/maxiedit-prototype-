@@ -12,7 +12,7 @@
 | 🔴 2 | Capacitor / Gradle / AGP 보안 패치 | ✅ 완료 | 월 | Dependabot |
 | 🔴 3 | Play Console 타겟 SDK / 데이터 안전 / 개인정보처리방침 | ⏳ 진행중 | 연 (필수) | X |
 | 🟡 4 | 에러 모니터링 도입 (window.onerror → Sentry) | 🟨 1단계 완료 | 1회 | - |
-| 🟡 5 | 안드로이드 키스토어 백업 정책 | ⏳ 미완료 | 1회 + 분기 점검 | X |
+| 🟡 5 | 안드로이드 키스토어 백업 정책 | 🟨 정책 수립 | 1회 + 분기 점검 | X |
 | 🟡 6 | GitHub Dependabot 활성화 | ✅ 완료 | 1회 | O |
 | 🟢 7 | 캐시버스터 `?v=N` git history 일치 검사 | ⏳ 미완료 | push마다 | 권장 |
 | 🟢 8 | iOS / Android 실기 회귀 테스트 | ⏳ 미완료 | 분기 | X |
@@ -136,7 +136,8 @@ index.html에 전역 에러 핸들러 추가:
 
 ## 🟡 5. 안드로이드 키스토어 백업 정책
 
-- [ ] **상태**: 미완료
+- [x] **점검 완료** (2026-04-30) — git 히스토리에 키 자료 0 확인 (`*.keystore`, `*.jks`, `storePassword`/`keyPassword` 평문, `signingConfigs` 모두 깨끗). `.gitignore`에 `*.keystore`, `*.jks`, `keystore.properties`, `key.properties` 패턴 사전 보강. CLAUDE.md "Android signing" 섹션 신규 (파일 위치 / `keystore.properties` 분리 패턴 / 2-location 백업 규칙 / 분기 무결성 확인).
+- [ ] **사용자 작업 남음** — release signing 시작 시점에 실제 keystore 생성 + 1Password/Bitwarden + 외장 디스크 2곳 백업 + 분기 캘린더 등록.
 
 **왜**: 키스토어 분실하면 같은 앱 ID로 업데이트 불가. **이게 사고 나면 복구 0%**.
 

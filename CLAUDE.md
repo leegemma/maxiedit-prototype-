@@ -192,6 +192,7 @@ Users identify elements by their **Figma node names** (`btn_start`, `btn_next`, 
 - **Privacy policy URL** for Play Console listing: `https://leegemma.github.io/maxiedit-prototype/docs/privacy.html` ([docs/privacy.html](docs/privacy.html)). The page declares zero data collection; update its "Last updated" date if behavior ever changes.
 - **Data safety form**: declare nothing collected, nothing shared, on-device processing. Aligned with what [docs/privacy.html](docs/privacy.html) states.
 - **OSS attribution URL**: `https://leegemma.github.io/maxiedit-prototype/docs/licenses.html` ([docs/licenses.html](docs/licenses.html)). Register under Play Console "License" if the listing supports it.
+- **Quarterly regression sweep**: [docs/qa-checklist.md](docs/qa-checklist.md) holds the running test plan and a per-quarter result table. Run iOS Safari + Android Chrome + Android APK once a quarter and append a row.
 
 ## Android signing
 

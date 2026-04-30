@@ -15,7 +15,7 @@
 | 🟡 5 | 안드로이드 키스토어 백업 정책 | 🟨 정책 수립 | 1회 + 분기 점검 | X |
 | 🟡 6 | GitHub Dependabot 활성화 | ✅ 완료 | 1회 | O |
 | 🟢 7 | 캐시버스터 `?v=N` git history 일치 검사 | ✅ 완료 | push마다 | 권장 |
-| 🟢 8 | iOS / Android 실기 회귀 테스트 | ⏳ 미완료 | 분기 | X |
+| 🟢 8 | iOS / Android 실기 회귀 테스트 | 🟨 매뉴얼 완료 | 분기 | X |
 | 🟢 9 | OSS 라이선스 고지 페이지 | ✅ 완료 | 1회 + 연 1회 | X |
 
 ---
@@ -213,7 +213,8 @@ scripts/check-cachebuster.sh 만들어줘.
 
 ## 🟢 8. iOS / Android 실기 회귀 테스트
 
-- [ ] **상태**: 분기 1회 반복
+- [x] **매뉴얼 작성 완료** (2026-04-30) — `docs/qa-checklist.md` 신규. 사전 준비 / iOS Safari (A1~A4) / Android Chrome (B1~B3) / Android APK (C1~C4) / 회귀 처리 / 다음 회차 예약 + 결과 누적 표. CLAUDE.md "Play Store compliance"에서 링크.
+- [ ] **분기 1회 반복** — 위 매뉴얼대로 실기기 테스트하고 결과 표에 한 줄 추가. 다음 점검일에서 3개월 뒤 캘린더 알림.
 
 **왜**: 코드 안 건드려도 OS·브라우저는 알아서 바뀜. MediaRecorder 거동, `dvh` 동작, `navigator.share`, 미디어 권한 다이얼로그 등이 갑자기 변할 수 있음.
 

@@ -19,6 +19,8 @@ External dependencies (loaded via CDN, no local install):
 
 Eagerly-loaded `<script>` tags pin a `sha384` SRI hash plus `crossorigin="anonymous"` so a tampered or stale CDN response is rejected by the browser. Regenerate the hash whenever the version bumps (e.g. `curl --ssl-no-revoke -sS <url> | openssl dgst -sha384 -binary | openssl base64 -A`). ffmpeg.wasm stays unhashed because it loads its own sub-resources at runtime.
 
+Full attribution and license texts: [docs/licenses.html](docs/licenses.html) (deployed at https://leegemma.github.io/maxiedit-prototype/docs/licenses.html). Add a row there whenever a new dependency is introduced.
+
 ## Live URLs
 
 - GitHub repo: https://github.com/leegemma/maxiedit-prototype

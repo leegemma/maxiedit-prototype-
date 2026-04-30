@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open Source Licenses — MaxiEdit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: #000;
+      color: #fff;
+      font-family: 'Inter', 'Noto Sans KR', sans-serif;
+      font-weight: 400;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      padding: 48px 20px 80px;
+      min-height: 100vh;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    .back {
+      display: inline-block;
+      color: rgba(255, 255, 255, 0.55);
+      text-decoration: none;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      margin-bottom: 32px;
+      transition: color 0.15s;
+    }
+    .back:hover { color: #fff; }
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.55);
+      margin-bottom: 40px;
+    }
+    .section-title {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.45);
+      margin: 32px 0 12px;
+    }
+    .lib {
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .lib:last-child { border-bottom: none; }
+    .lib-name {
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .lib-meta {
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: rgba(255, 255, 255, 0.55);
+      margin-bottom: 8px;
+    }
+    .lib-desc {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 8px;
+    }
+    .lib-link {
+      font-size: 12px;
+      color: #fffb8a;
+      text-decoration: none;
+      letter-spacing: 0.02em;
+    }
+    .lib-link:hover { text-decoration: underline; }
+    .footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <a class="back" href="../">← 메인으로 / Back</a>
+    <h1>Open Source Licenses</h1>
+    <p class="subtitle">MaxiEdit가 사용하는 오픈소스 라이브러리·폰트 / Third-party libraries and fonts used by MaxiEdit.</p>
+
+    <h2 class="section-title">Libraries</h2>
+
+    <div class="lib">
+      <div class="lib-name">Sortable.js</div>
+      <div class="lib-meta">v1.15.2 · MIT License</div>
+      <div class="lib-desc">선택 썸네일 long-press drag-reorder. / Drag-and-drop reordering of selected thumbnails.</div>
+      <a class="lib-link" href="https://github.com/SortableJS/Sortable/blob/master/LICENSE" target="_blank" rel="noopener noreferrer">License text →</a>
+    </div>
+
+    <div class="lib">
+      <div class="lib-name">html2canvas</div>
+      <div class="lib-meta">v1.4.1 · MIT License</div>
+      <div class="lib-desc">전체 결과 화면 PNG 추출. / Full-result PNG export.</div>
+      <a class="lib-link" href="https://github.com/niklasvh/html2canvas/blob/master/LICENSE" target="_blank" rel="noopener noreferrer">License text →</a>
+    </div>
+
+    <div class="lib">
+      <div class="lib-name">ffmpeg.wasm</div>
+      <div class="lib-meta">v0.12.10 · MIT (JS wrapper) · GPL/LGPL (FFmpeg components)</div>
+      <div class="lib-desc">MediaRecorder가 MP4를 직접 못 만들 때 사용하는 트랜스코드 폴백. / MP4 transcode fallback when MediaRecorder doesn't emit MP4 natively.</div>
+      <a class="lib-link" href="https://github.com/ffmpegwasm/ffmpeg.wasm/blob/master/LICENSE" target="_blank" rel="noopener noreferrer">License text →</a>
+    </div>
+
+    <div class="lib">
+      <div class="lib-name">Capacitor</div>
+      <div class="lib-meta">v6.2.1 · MIT License</div>
+      <div class="lib-desc">웹 프로토타입을 Android 네이티브 앱으로 패키징. / Wraps the web prototype into the native Android app.</div>
+      <a class="lib-link" href="https://github.com/ionic-team/capacitor/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License text →</a>
+    </div>
+
+    <div class="lib">
+      <div class="lib-name">Heroicons</div>
+      <div class="lib-meta">MIT License</div>
+      <div class="lib-desc">UI 아이콘 (벨, X, 화살표, 다운로드 등). / UI icons (bell, x-mark, arrows, download, and more).</div>
+      <a class="lib-link" href="https://github.com/tailwindlabs/heroicons/blob/master/LICENSE" target="_blank" rel="noopener noreferrer">License text →</a>
+    </div>
+
+    <h2 class="section-title">Fonts</h2>
+
+    <div class="lib">
+      <div class="lib-name">Inter</div>
+      <div class="lib-meta">SIL Open Font License 1.1</div>
+      <div class="lib-desc">UI 본문·버튼 라틴 글꼴. / Body and button typography (Latin).</div>
+      <a class="lib-link" href="https://github.com/rsms/inter/blob/master/LICENSE.txt" target="_blank" rel="noopener noreferrer">License text →</a>
+    </div>
+
+    <div class="lib">
+      <div class="lib-name">Noto Sans KR</div>
+      <div class="lib-meta">SIL Open Font License 1.1</div>
+      <div class="lib-desc">한국어 본문·버튼 글꼴. / Korean body and button typography.</div>
+      <a class="lib-link" href="https://fonts.google.com/noto/specimen/Noto+Sans+KR/license" target="_blank" rel="noopener noreferrer">License text →</a>
+    </div>
+
+    <div class="lib">
+      <div class="lib-name">Nanum Myeongjo</div>
+      <div class="lib-meta">SIL Open Font License 1.1</div>
+      <div class="lib-desc">full_image 캡션 명조체. / Caption serif used inside full_image.</div>
+      <a class="lib-link" href="https://fonts.google.com/specimen/Nanum+Myeongjo/license" target="_blank" rel="noopener noreferrer">License text →</a>
+    </div>
+
+    <p class="footer">
+      이 페이지는 MaxiEdit 앱의 오픈소스 고지 의무를 위해 제공됩니다.<br />
+      This page exists to fulfill MaxiEdit's open-source attribution obligations.
+    </p>
+  </main>
+</body>
+</html>

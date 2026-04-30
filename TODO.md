@@ -236,7 +236,7 @@ scripts/check-cachebuster.sh 만들어줘.
 
 ## 🟢 9. OSS 라이선스 고지 페이지
 
-- [ ] **상태**: 미완료
+- [x] **상태**: 완료 (2026-04-30) — `docs/licenses.html` 작성 (Sortable, html2canvas, ffmpeg.wasm, Capacitor, Heroicons, Inter, Noto Sans KR, Nanum Myeongjo). CLAUDE.md "External dependencies"에서 링크. Play Console "라이선스" 항목 등록 가능.
 
 **왜**: ffmpeg.wasm은 LGPL 듀얼이라 고지 의무 있음. 다른 의존성도 일괄 정리해두면 안전.
 

@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-04-30 | (this commit) | TODO #4 1단계 — `<script>` 최상단에 `error` / `unhandledrejection` 전역 핸들러 추가 (현재는 console.error로만, Sentry 후킹 지점 확보). CLAUDE.md "Error handling" 섹션 신규 |
+| 2026-04-30 | (this commit) | TODO #9 처리 — `docs/licenses.html` 신규 (Sortable / html2canvas / ffmpeg.wasm / Capacitor / Heroicons + Inter / Noto Sans KR / Nanum Myeongjo). CLAUDE.md "External dependencies"에서 링크 |
+| 2026-04-30 | 84112c8 | TODO #4 1단계 — `<script>` 최상단에 `error` / `unhandledrejection` 전역 핸들러 추가 (현재는 console.error로만, Sentry 후킹 지점 확보). CLAUDE.md "Error handling" 섹션 신규 |
 | 2026-04-30 | c28a1b7 | TODO #6 처리 — `.github/dependabot.yml` 추가 (npm + github-actions, weekly, label `deps`, semver-major skip) |
 | 2026-04-30 | b9536b1 | TODO #1 처리 — Sortable.js 1.15.2 / html2canvas 1.4.1 `<script>`에 SRI(sha384) + crossorigin="anonymous" 적용. CLAUDE.md "External dependencies"에 해시 갱신 규칙 한 줄 추가. ffmpeg.wasm은 lazy라 제외 |
 | 2026-04-29 | 89fa7ca | 12_single을 10_result와 골격 통일(.split-track top:69 height:522, image/text 5:5, indicator top:615), 출력 1080×1434로 통일, 다음/닫기/뒤로 버튼 다듬기(높이 32, padding 0 12 1, 좌측 8), bottom_layer_select 우측 padding 0 + 썸네일 영역 flex:1 1 0으로 확장 + 5번째 이상 추가 시 자동 스크롤, letter-spacing 0.18em 일괄 제거, GNB 탭 좌우 padding 14→10, btn-text-single/flip/btn-reset 라벨 크기 일괄 +1px |

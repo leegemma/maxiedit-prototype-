@@ -10,7 +10,7 @@
 |---|---|---|---|---|
 | 🔴 1 | CDN 의존성 SRI + 버전 핀 점검 | ✅ 완료 | 1회 + 분기 | 부분 |
 | 🔴 2 | Capacitor / Gradle / AGP 보안 패치 | ✅ 완료 | 월 | Dependabot |
-| 🔴 3 | Play Console 타겟 SDK / 데이터 안전 / 개인정보처리방침 | ⏳ 진행중 | 연 (필수) | X |
+| 🔴 3 | Play Console 타겟 SDK / 데이터 안전 / 개인정보처리방침 | 🟨 코드 측 완료 | 연 (필수) | X |
 | 🟡 4 | 에러 모니터링 도입 (window.onerror → Sentry) | 🟨 1단계 완료 | 1회 | - |
 | 🟡 5 | 안드로이드 키스토어 백업 정책 | 🟨 정책 수립 | 1회 + 분기 점검 | X |
 | 🟡 6 | GitHub Dependabot 활성화 | ✅ 완료 | 1회 | O |
@@ -76,7 +76,8 @@ package.json의 Capacitor 의존성 3종(@capacitor/core, @capacitor/android,
 
 ## 🔴 3. Play Console 타겟 SDK / 데이터 안전 / 개인정보처리방침
 
-- [ ] **상태**: 미완료
+- [x] **코드 측 완료** (2026-04-30) — `variables.gradle` `compileSdkVersion`/`targetSdkVersion` 34→35 (현 Play Store 의무 만족). `docs/privacy.html` 신규 (수집 0, 디바이스 내 처리 명시, 한·영 병기). CLAUDE.md "Play Store compliance" 섹션 신규.
+- [ ] **사용자 작업 남음** — Play Console 로그인 후: (1) 데이터 안전 폼 = "수집 안 함" / "디바이스 내 처리"로 작성. (2) 개인정보처리방침 URL 등록: `https://leegemma.github.io/maxiedit-prototype/docs/privacy.html`. (3) (선택) 라이선스 URL: `https://leegemma.github.io/maxiedit-prototype/docs/licenses.html`. (4) Google 자체 심사 1~7일 대기.
 
 **왜**: Play Store는 매년 타겟 SDK 강제 상향. 미준수 시 신규 설치 차단. 미디어 권한 쓰는 앱은 데이터 안전 + 개인정보처리방침 URL 필수.
 

@@ -184,6 +184,13 @@ When the user shares a Figma URL:
 
 Users identify elements by their **Figma node names** (`btn_start`, `btn_next`, `btn_text`, `full_image`, `bottom_layer_select`, `icon_check_on`, etc.). Preserve these as `data-name` attributes on the corresponding DOM elements so references stay traceable across renames.
 
+## Play Store compliance
+
+- **Target SDK** is pinned in [android/variables.gradle](android/variables.gradle) (`compileSdkVersion` + `targetSdkVersion`). Google Play raises the minimum every August 31 — currently the floor is **35** (Android 15). Bump both values together when the next deadline approaches; the bundled Capacitor 6.x line tolerates SDK 35 without changes.
+- **Privacy policy URL** for Play Console listing: `https://leegemma.github.io/maxiedit-prototype/docs/privacy.html` ([docs/privacy.html](docs/privacy.html)). The page declares zero data collection; update its "Last updated" date if behavior ever changes.
+- **Data safety form**: declare nothing collected, nothing shared, on-device processing. Aligned with what [docs/privacy.html](docs/privacy.html) states.
+- **OSS attribution URL**: `https://leegemma.github.io/maxiedit-prototype/docs/licenses.html` ([docs/licenses.html](docs/licenses.html)). Register under Play Console "License" if the listing supports it.
+
 ## Android signing
 
 Release signing is **not** wired up yet (the current Capacitor scaffold only builds debug APKs). When it lands, follow these rules so the keystore never leaks into git:

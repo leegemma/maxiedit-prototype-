@@ -1419,6 +1419,22 @@
   </div><!-- /.app-frame -->
 
   <script>
+    // Global error handlers — TODO #4 stage 1.
+    // Currently just console.error so issues surface during development.
+    // When Sentry (or any other reporter) is wired in (stage 2), hook it
+    // here so all error/rejection events flow through one funnel.
+    window.addEventListener('error', (event) => {
+      console.error('[uncaught error]', event.message, {
+        filename: event.filename,
+        line: event.lineno,
+        col: event.colno,
+        error: event.error,
+      });
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('[unhandled rejection]', event.reason);
+    });
+
     const MAX_SELECT = 9;
     const SLOT_COLORS = [
       '#ffefb7', '#ffdfdf', '#d9d9d9',

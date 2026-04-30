@@ -140,6 +140,17 @@ The whole chrome uses a single design vocabulary:
 
 When designing a new chrome surface, copy from these tokens. Don't invent a new pill or new border radius.
 
+## Error handling
+
+A pair of global handlers sits at the top of `index.html`'s main `<script>`:
+
+- `window.addEventListener('error', ...)` — uncaught synchronous errors and resource load failures.
+- `window.addEventListener('unhandledrejection', ...)` — promise rejections that nothing else caught.
+
+Both currently just `console.error` with structured context. This is **stage 1** of TODO.md #4 — the goal is to give a single funnel that a real reporter (Sentry, Crashlytics, etc.) can hook into later without touching the rest of the codebase. When adding stage 2, replace the `console.error` body with the reporter's `captureException`, keep the listeners themselves intact.
+
+Don't swallow errors in app code by adding broad `try/catch` blocks just to silence them — let them bubble to these handlers so they're visible.
+
 ## Documentation policy
 
 Every commit that changes code must also update one of:

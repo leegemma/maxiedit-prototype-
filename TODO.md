@@ -107,7 +107,8 @@ docs/privacy.html 만들어줘.
 
 ## 🟡 4. 에러 모니터링 도입
 
-- [ ] **상태**: 미완료
+- [x] **1단계 완료** (2026-04-30) — `window.addEventListener('error' / 'unhandledrejection')` 두 핸들러를 `<script>` 최상단에 배치. 현재는 `console.error`로만 출력. CLAUDE.md "Error handling" 섹션 신규.
+- [ ] **2단계 미완료** — Sentry 도입 (`@sentry/capacitor` 검토). DSN은 별도 config 변수로 분리. 강제 throw 테스트 후 대시보드 이벤트 도착 확인.
 
 **왜**: 지금 사용자가 크래시 나도 운영자는 모름. 운영의 눈을 만들어야 함.
 

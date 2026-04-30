@@ -1,0 +1,24 @@
+# Dependabot config — TODO.md #6.
+# Weekly minor/patch PRs only; major bumps skipped so review stays small.
+# Labels every PR with "deps" for easy filtering.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "deps"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "deps"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

@@ -166,7 +166,7 @@ index.html에 전역 에러 핸들러 추가:
 
 ## 🟡 6. GitHub Dependabot 활성화
 
-- [ ] **상태**: 미완료
+- [x] **상태**: 완료 (2026-04-30) — `.github/dependabot.yml` 추가 (npm + github-actions, weekly, label `deps`, semver-major skip). repo Settings → Security → Dependabot에서 활성 확인 필요.
 
 **왜**: 의존성 보안 취약점 자동 PR. 무료, 클릭 한 번.
 

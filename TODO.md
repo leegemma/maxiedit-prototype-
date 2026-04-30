@@ -14,7 +14,7 @@
 | 🟡 4 | 에러 모니터링 도입 (window.onerror → Sentry) | 🟨 1단계 완료 | 1회 | - |
 | 🟡 5 | 안드로이드 키스토어 백업 정책 | 🟨 정책 수립 | 1회 + 분기 점검 | X |
 | 🟡 6 | GitHub Dependabot 활성화 | ✅ 완료 | 1회 | O |
-| 🟢 7 | 캐시버스터 `?v=N` git history 일치 검사 | ⏳ 미완료 | push마다 | 권장 |
+| 🟢 7 | 캐시버스터 `?v=N` git history 일치 검사 | ✅ 완료 | push마다 | 권장 |
 | 🟢 8 | iOS / Android 실기 회귀 테스트 | ⏳ 미완료 | 분기 | X |
 | 🟢 9 | OSS 라이선스 고지 페이지 | ✅ 완료 | 1회 + 연 1회 | X |
 
@@ -191,7 +191,7 @@ index.html에 전역 에러 핸들러 추가:
 
 ## 🟢 7. 캐시버스터 `?v=N` git history 일치 검사
 
-- [ ] **상태**: 미완료
+- [x] **상태**: 완료 (2026-04-30) — `scripts/check-cachebuster.sh` 작성. 권장 N (= main 커밋 수) 출력 + 추적 파일에 stale N 핀이 있으면 빨간 경고로 종료 코드 1. CLAUDE.md "Live URLs"에서 사용법 한 줄. pre-push hook 통합은 별도 단계 (TODO 노트 그대로).
 
 **왜**: CLAUDE.md 정책 — push마다 N+1. 누락되면 iOS Safari가 stale 서빙.
 

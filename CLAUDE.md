@@ -28,6 +28,8 @@ Full attribution and license texts: [docs/licenses.html](docs/licenses.html) (de
 
 When sharing the Pages URL with the user, always append a cache-busting `?v=N` query (e.g. `https://leegemma.github.io/maxiedit-prototype/?v=3`). Increment N by 1 with every new push to `origin/main` so iOS Safari can't serve a stale deploy. Do not reset N across conversations — derive it from git history if unknown. The local HTTP server URL (`http://<lan-ip>:8080/`) does not need this.
 
+`bash scripts/check-cachebuster.sh` prints the current recommended `N` (= commit count on `main`) and warns if any tracked file outside the exempt list (`HISTORY.md`, `CLAUDE.md`, the script itself) pins a stale value. Run it before sharing fresh links.
+
 ## Two working clones
 
 This project lives in two places on disk; both point to the same GitHub remote:

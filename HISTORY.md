@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-04-30 | (this commit) | TODO #3 코드 측 처리 — `variables.gradle` SDK 34→35 (Play Store 현 의무), `docs/privacy.html` 신규 (수집 0 / 디바이스 내 처리, 한·영). CLAUDE.md "Play Store compliance" 섹션 신규 (target SDK / privacy URL / data safety / OSS URL) |
+| 2026-04-30 | (this commit) | TODO #7 처리 — `scripts/check-cachebuster.sh` 신규 (권장 ?v=N 출력 + stale 핀 감지 시 exit 1). HISTORY.md / CLAUDE.md / 스크립트 자체 exempt. CLAUDE.md "Live URLs"에 사용법 한 줄 |
+| 2026-04-30 | ececedc | TODO #3 코드 측 처리 — `variables.gradle` SDK 34→35 (Play Store 현 의무), `docs/privacy.html` 신규 (수집 0 / 디바이스 내 처리, 한·영). CLAUDE.md "Play Store compliance" 섹션 신규 (target SDK / privacy URL / data safety / OSS URL) |
 | 2026-04-30 | c6a728b | TODO #5 정책 수립 — git 히스토리에 키 자료 0 확인 후 `.gitignore`에 `*.keystore` / `*.jks` / `keystore.properties` / `key.properties` 패턴 사전 보강. CLAUDE.md "Android signing" 섹션 신규 (파일 위치, `keystore.properties` 분리 패턴, 2-location 백업 규칙, 분기 무결성 확인) |
 | 2026-04-30 | d3bda58 | TODO #9 처리 — `docs/licenses.html` 신규 (Sortable / html2canvas / ffmpeg.wasm / Capacitor / Heroicons + Inter / Noto Sans KR / Nanum Myeongjo). CLAUDE.md "External dependencies"에서 링크 |
 | 2026-04-30 | 84112c8 | TODO #4 1단계 — `<script>` 최상단에 `error` / `unhandledrejection` 전역 핸들러 추가 (현재는 console.error로만, Sentry 후킹 지점 확보). CLAUDE.md "Error handling" 섹션 신규 |

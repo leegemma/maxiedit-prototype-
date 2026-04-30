@@ -17,6 +17,8 @@
 | 🟢 7 | 캐시버스터 `?v=N` git history 일치 검사 | ✅ 완료 | push마다 | 권장 |
 | 🟢 8 | iOS / Android 실기 회귀 테스트 | 🟨 매뉴얼 완료 | 분기 | X |
 | 🟢 9 | OSS 라이선스 고지 페이지 | ✅ 완료 | 1회 + 연 1회 | X |
+| 🔴 10 | 좁은 단말 보호 (반응형 옵션 B) | ✅ 완료 | 1회 | X |
+| 🟡 11 | 진짜 반응형 (옵션 C) | ⏳ 미완료 | 1회 + Figma 동반 | X |
 
 ---
 
@@ -264,6 +266,159 @@ docs/licenses.html 만들어줘.
 **완료 기준**:
 - licenses.html 배포
 - Play Console "라이선스" 항목에 URL 등록 가능
+
+---
+
+## 🔴 10. 좁은 단말 보호 (반응형 옵션 B)
+
+- [x] **상태**: 완료 (2026-04-30) — `:root --frame-width: min(393px, 100vw)`, `.app-frame` width var, `.full-image` / `.result-grid` width 100%, `.preview-viewport` width frame-width 기반, `.preview .full-image` 폭 override로 transform: scale 정확도 유지, `.picker-grid` grid-auto-rows 100% 기반, `capturePng()` scale 동적 계산. CLAUDE.md "Narrow device handling" 섹션 신규.
+
+**왜**: CLAUDE.md에 `393×852 fixed`로 박혀있고 코드 곳곳에 `393px`/`522px` 절대값. 320~375px 단말(iPhone SE, 저가 안드로이드)에서 layout 잘림. 5만 명 시나리오 진입 전 최소 보호선.
+
+**범위 (옵션 B)**:
+- 320~440px 모든 폭에서 잘림 없이 동작
+- 393~412px 단말은 외형 변화 0 (회귀 방지)
+- iPad/태블릿/큰 화면은 일단 그대로 — 가운데 박스 형태 유지 (옵션 C에서 처리)
+- 폰트 크기, 그리드 컬럼 수, 가로모드는 옵션 C 영역 → 손대지 마
+
+**Claude Code 프롬프트**:
+```
+TODO #10 처리 — 좁은 단말 보호 (반응형 옵션 B).
+목표: 320~440px 모든 폭에서 layout 잘림 없이 동작, 393~412px 회귀 0.
+
+1) CSS audit — index.html에서 393px / 522px 절대값 전수 검토
+   - .app-frame: width: 393px → width: min(393px, 100vw) (height 852px 유지)
+   - .full-image: width: 393px → width: 100% (height 522px 유지)
+   - .result-grid: width: 393px → width: 100%
+   - .picker-grid: grid-auto-rows: calc((393px - 8px) / 3)
+                   → calc((100% - 8px) / 3)
+   - .preview / .preview-viewport: 393px 기반 width 계산을 frame 폭 기반으로
+   - .split-track height 522 / indicator top 615 / .full-image top 69 같은
+     세로축 절대값은 그대로 유지 (높이는 옵션 B 범위 밖)
+   - 그 외 393 / 522 / 248(=4×56+3×8) 등장 spot 모두 검토
+
+2) 출력 해상도 보호 — 가장 중요한 회귀 포인트
+   - TARGET_WIDTH = 1080, OUTPUT_HEIGHT = 1434 상수는 그대로
+   - capturePng() 의 html2canvas scale을 동적 계산:
+     SCALE_OUT = TARGET_WIDTH / fullImage.offsetWidth
+     (지금은 1080/393 하드코딩 — 좁은 단말에서 출력 < 1080 되어버림)
+   - drawFullImageFrame / drawSingleFrame 은 캔버스 사이즈 기반이라 영향 없음
+
+3) 회귀 테스트 — Chrome DevTools 디바이스 모드
+   필수 폭: 320 / 360 / 375 / 393 / 412 / 440
+   각 폭에서 확인:
+   - 02_edit 헤더 두 버튼(닫기 / 초기화) 안 잘림
+   - bottom_layer_select 에 thumb 4개 + 다음 버튼 한 줄
+   - picker grid 3열 + 사각형 비율 유지
+   - 10_result 인디케이터 dot 화면 안
+   - 12_single split 5:5 유지, 텍스트 모달 안 가려짐
+   - 다운로드 PNG 출력이 여전히 정확히 1080×1434
+
+4) CLAUDE.md 갱신
+   - "Target viewport is fixed at 393×852" 문장 수정:
+     "Designed at 393×852 base; on-screen frame is min(393px, 100vw) × 100dvh
+      to safely handle 320~440px devices. Tablet/desktop responsive is option
+      C / out of scope here."
+   - 필요 시 "Narrow device handling" 섹션 신규 한 단락
+   - HISTORY.md 한 줄 추가
+```
+
+**완료 기준**:
+- 320 / 360 / 375 시뮬레이터에서 잘림·overflow 없음
+- 393~412 단말 외형 회귀 0 (스크린샷 비교)
+- 다운로드 PNG/MP4가 단말 폭과 무관하게 1080×1434
+- iPad/태블릿은 여전히 가운데 393px 박스 (의도된 임시 상태)
+- CLAUDE.md, HISTORY.md 갱신
+
+---
+
+## 🟡 11. 진짜 반응형 (옵션 C)
+
+- [ ] **상태**: 미완료 (옵션 B / TODO #10 완료 후 시작)
+
+**왜**: 옵션 B 후에도 큰 화면(iPad, 갤럭시탭, 폴더블 펼침, 데스크탑 브라우저)에선 검은 여백이 화면 절반을 차지. 5만 명 단계의 디바이스 다양성 흡수 못 함. **사업적으로 iPad 사용자가 비즈니스에 중요한가** 결정 후 진입.
+
+**전제 조건**:
+- TODO #10 완료
+- Figma 측에서 tablet 레이아웃 시안 합의 (디자인 동반 필수)
+- Remote Config (직전 답변에서 논의) 도입 권장 — 출력 해상도 단말별 분기에 사용
+
+**범위 (옵션 C)**:
+- CSS 디자인 토큰 시스템 (변수화)
+- Breakpoint: mobile(<600) / tablet(600~1024) / desktop(>1024)
+- picker grid 컬럼 수 가변 (mobile 3열 → tablet 4~5열)
+- 12_single split 가로 화면에선 좌우 분할
+- 폰트 크기 `clamp()` 기반 가변
+- 가로모드 처리
+- 출력 해상도 단말별 (저사양은 720p, 태블릿은 1440px 등)
+
+**1단계 — 토큰 추출 (Figma 결정 전 가능)**:
+
+**Claude Code 프롬프트**:
+```
+TODO #11 1단계 — 디자인 토큰 추출.
+시각 변화 0이 목표. 후속 단계(breakpoint)의 기반 작업.
+
+index.html CSS 전체에서 magic number 를 :root CSS 변수로:
+- 색상:
+  --color-bg-page: #000
+  --color-cta: #fffb8a
+  --color-hairline-strong: rgba(255,255,255,0.32)
+  --color-hairline-soft: rgba(255,255,255,0.08)
+  --color-scrim-40: rgba(0,0,0,0.4)
+  (그 외 등장 색상 모두)
+- 간격:
+  --space-2xs: 4px / --space-xs: 8px / --space-s: 12px /
+  --space-m: 16px / --space-l: 20px / --space-xl: 24px
+- 폰트 크기:
+  --fs-2xs: 10px / --fs-xs: 11px / --fs-s: 12px /
+  --fs-m: 13px / --fs-l: 15px / --fs-xl: 17px / --fs-2xl: 22px
+- 폰트 패밀리:
+  --font-ui: 'Inter', 'Noto Sans KR', sans-serif
+  --font-serif: 'Nanum Myeongjo', serif
+- border-radius: --radius: 4px (CLAUDE.md 규칙 — 모든 버튼 4px)
+
+하드코딩된 px / 색상이 토큰으로 일대일 치환됐는지 확인.
+시각 회귀 0 (스크린샷 비교).
+
+CLAUDE.md "Visual conventions" 섹션에 토큰 표 추가.
+HISTORY.md 한 줄.
+```
+
+**2단계 — Breakpoint 도입 (Figma 시안 합의 후 별도 커밋)**:
+
+**Claude Code 프롬프트**:
+```
+TODO #11 2단계 — tablet / desktop breakpoint.
+선결: Figma에 tablet (768~1024) 레이아웃 시안 합의 완료.
+
+대상:
+- 02_edit picker-grid: 600px+ 에서 repeat(4, 1fr), 1024px+ 에서 (5, 1fr)
+- 12_single split-slide: 가로 폭 > 세로일 때 flex-direction: row
+  (image / text 좌우 분할)
+- 폰트 크기 clamp 적용 (--fs-* 토큰을 clamp 함수로 재정의)
+- .app-frame width: min(393px, 100vw) → 600px+ 에서 더 큰 값 허용
+- 출력 해상도: Remote Config 키 output.width 도입,
+  단말 dpi/메모리 따라 720/1080/1440 분기
+
+이 단계는 회귀 위험 큼. 별도 PR / 별도 커밋으로 분리.
+이전 옵션 B의 393~412 폭 회귀 0 유지.
+
+CLAUDE.md 대규모 갱신 — "Pages, not overlays" 다음에 "Responsive scales"
+섹션 신규.
+HISTORY.md.
+```
+
+**3단계 (선택) — 가로모드 + 접근성**:
+- 가로모드 — 락 또는 별도 디자인
+- VoiceOver / TalkBack `aria-label` 전수 검토
+- OS 폰트 크기 설정 따라가기 (`rem` 기반)
+- 색약 검토 (`#fffb8a` CTA의 색약 테스트)
+
+**완료 기준**:
+- 1단계: 토큰 100% 적용, 시각 회귀 0
+- 2단계: tablet 시뮬레이터에서 의도한 레이아웃 동작, 393~412 회귀 0
+- 3단계: 별도 트랙
 
 ---
 

@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Web prototype: single file [index.html](index.html). No build, no package manager, no tests for the web side. Open `index.html` directly or via VSCode Live Server.
 - Android wrapper: [Capacitor 6.x](https://capacitorjs.com/) project scaffold ([package.json](package.json), [capacitor.config.json](capacitor.config.json), `www/`). The `android/` folder is generated locally with `npm run cap:add:android` and is git-ignored.
 
-Target viewport is fixed at **393×852** (iPhone portrait). UI text is Korean.
+Designed at **393×852** (iPhone portrait); on-screen frame is `min(393px, 100vw) × 100dvh` to safely handle 320~440px devices. Tablet/desktop responsive is option C / out of scope here. UI text is Korean.
 
 External dependencies (loaded via CDN, no local install):
 - Google Fonts — Inter, Noto Sans KR (used by buttons/UI), Nanum Myeongjo (caption serif inside `full_image`)
@@ -38,6 +38,19 @@ This project lives in two places on disk; both point to the same GitHub remote:
 - **Clean clone** (Android build, no Korean/spaces in path): `~/dev/maxiedit-prototype-`
 
 Android Studio cannot start an IDE inside the iCloud + Korean path, so all native build commands (`npm install`, `npm run cap:add:android`, `cap:open:android`, `cap:build:android`) MUST be run from `~/dev/maxiedit-prototype-`. Web edits/commits can happen in either; pull on the other side to stay in sync.
+
+## Narrow device handling (option B)
+
+The base design is 393×852, but the on-screen frame uses `width: min(393px, 100vw)` so devices in the 320~440 range (iPhone SE, low-end Android) don't clip horizontally. Vertical dimensions stay fixed (`height: 522px`, indicator `top: 615`, split-track `top: 69`, etc.) — height responsiveness is out of scope here, planned for option C.
+
+Concretely:
+- `:root` exposes `--frame-width: min(393px, 100vw)` so any layer that needs the unscaled frame width can read it.
+- `.app-frame { width: var(--frame-width) }`.
+- `.full-image { width: 100% }` (formerly `393px`); `.result-grid { width: 100% }`; `.preview-viewport { width: calc(var(--frame-width) * var(--preview-scale)) }`; `.preview .full-image { width: var(--frame-width) }` (override so `transform: scale` lands on viewport size).
+- `.picker-grid { grid-auto-rows: calc((100% - 8px) / 3) }` so picker cells stay square at any frame width.
+- `capturePng()` derives `scale = TARGET_WIDTH / fullImage.offsetWidth` instead of the old hardcoded `1080/393`, so PNG output is always `TARGET_WIDTH` wide regardless of device.
+
+Tablets and wider screens still see a centered 393-wide frame — that's the option C decision point. Don't sneak desktop responsive in here.
 
 ## Architecture
 

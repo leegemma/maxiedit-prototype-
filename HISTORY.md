@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-04-30 | (this commit) | TODO #8 매뉴얼 — `docs/qa-checklist.md` 신규 (iOS Safari A1~A4 / Android Chrome B1~B3 / Android APK C1~C4 + 결과 표). 분기 회귀 테스트는 사용자가 매뉴얼대로 직접 수행 |
+| 2026-04-30 | (this commit) | TODO #10 처리 — 좁은 단말 보호 (옵션 B). `:root --frame-width: min(393px, 100vw)`로 .app-frame 폭 가변, .full-image/.result-grid 100%, .preview-viewport frame-width 기반, .preview .full-image 폭 override, .picker-grid 100% 기반, capturePng() 동적 scale로 PNG 출력 항상 1080-wide. 393~412 단말 회귀 0, 320~375 폭에서도 잘림 없음. CLAUDE.md "Narrow device handling" 섹션 신규 |
+| 2026-04-30 | 34aabf1 | TODO #8 매뉴얼 — `docs/qa-checklist.md` 신규 (iOS Safari A1~A4 / Android Chrome B1~B3 / Android APK C1~C4 + 결과 표). 분기 회귀 테스트는 사용자가 매뉴얼대로 직접 수행 |
 | 2026-04-30 | dda72f2 | TODO #7 처리 — `scripts/check-cachebuster.sh` 신규 (권장 ?v=N 출력 + stale 핀 감지 시 exit 1). HISTORY.md / CLAUDE.md / 스크립트 자체 exempt. CLAUDE.md "Live URLs"에 사용법 한 줄 |
 | 2026-04-30 | ececedc | TODO #3 코드 측 처리 — `variables.gradle` SDK 34→35 (Play Store 현 의무), `docs/privacy.html` 신규 (수집 0 / 디바이스 내 처리, 한·영). CLAUDE.md "Play Store compliance" 섹션 신규 (target SDK / privacy URL / data safety / OSS URL) |
 | 2026-04-30 | c6a728b | TODO #5 정책 수립 — git 히스토리에 키 자료 0 확인 후 `.gitignore`에 `*.keystore` / `*.jks` / `keystore.properties` / `key.properties` 패턴 사전 보강. CLAUDE.md "Android signing" 섹션 신규 (파일 위치, `keystore.properties` 분리 패턴, 2-location 백업 규칙, 분기 무결성 확인) |

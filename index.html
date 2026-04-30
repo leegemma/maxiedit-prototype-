@@ -16,14 +16,19 @@
     body { display: flex; justify-content: center; align-items: center; overflow: hidden; }
     button { font-family: inherit; }
 
-    :root { --preview-scale: 0.4; }
+    :root {
+      --preview-scale: 0.4;
+      /* TODO #10: narrow-device safety. Frame is 393 on devices ≥393, but
+         shrinks down to 100vw on 320~393 phones (iPhone SE etc). Vertical
+         dimensions stay fixed; only width tracks the viewport. */
+      --frame-width: min(393px, 100vw);
+    }
 
     /* phone-sized frame that contains all pages and the textedit modal */
     .app-frame {
       position: relative;
-      width: 393px;
+      width: var(--frame-width);
       height: 852px;
-      max-width: 100vw;
       max-height: 100vh;
       max-height: 100dvh; /* modern browsers: follow the visible viewport so iOS Safari chrome doesn't cover bottom bar */
       background: #000;
@@ -511,7 +516,7 @@
       z-index: 1;
     }
     .preview-viewport {
-      width: calc(393px * var(--preview-scale));
+      width: calc(var(--frame-width) * var(--preview-scale));
       height: calc(522px * var(--preview-scale));
       overflow: hidden;
       position: relative;
@@ -520,6 +525,10 @@
       position: absolute;
       top: 0;
       left: 0;
+      width: var(--frame-width);   /* override .full-image width:100% so the
+                                      pre-scale layout box matches the frame
+                                      exactly; transform: scale then renders
+                                      it to viewport dimensions */
       transform: scale(var(--preview-scale));
       transform-origin: top left;
     }
@@ -578,7 +587,7 @@
       position: relative;       /* anchor for the empty-state overlay */
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      grid-auto-rows: calc((393px - 8px) / 3);
+      grid-auto-rows: calc((100% - 8px) / 3);
       gap: 2px;
       overflow-y: auto;
       overflow-x: hidden;
@@ -901,7 +910,7 @@
 
     /* shared full_image */
     .full-image {
-      width: 393px;
+      width: 100%;
       height: 522px;
       background: #fff;
       overflow: hidden;
@@ -916,7 +925,7 @@
       position: absolute;
       top: 15px;
       left: 0;
-      width: 393px;
+      width: 100%;
       display: flex;
       flex-direction: column;
       gap: 31px;
@@ -2083,7 +2092,7 @@
     };
 
     const TARGET_WIDTH = 1080;          // bumped from 650 for sharper encoder input
-    const SOURCE_WIDTH = 393;
+    const SOURCE_WIDTH = 393;            // base design width — used for OUTPUT_HEIGHT and MP4 canvas
     const SOURCE_HEIGHT = 522;
     const SCALE_OUT = TARGET_WIDTH / SOURCE_WIDTH;
     const OUTPUT_HEIGHT = Math.round(SOURCE_HEIGHT * SCALE_OUT);
@@ -2122,8 +2131,12 @@
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
       const fullImage = document.querySelector('#page-result .full-image');
       if (!fullImage) throw new Error('full-image not found');
+      // TODO #10 — full-image renders at the actual frame width, not always 393.
+      // Compute scale dynamically so the output canvas is always TARGET_WIDTH wide.
+      const renderedWidth = fullImage.offsetWidth || SOURCE_WIDTH;
+      const dynamicScale = TARGET_WIDTH / renderedWidth;
       const canvas = await html2canvas(fullImage, {
-        scale: SCALE_OUT,
+        scale: dynamicScale,
         backgroundColor: '#ffffff',
         useCORS: true,
         logging: false,

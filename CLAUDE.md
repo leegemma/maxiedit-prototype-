@@ -17,6 +17,8 @@ External dependencies (loaded via CDN, no local install):
 - html2canvas 1.4.1 — full result PNG export
 - ffmpeg.wasm 0.12.10 (lazy) — MP4 transcode fallback when MediaRecorder doesn't emit MP4
 
+Eagerly-loaded `<script>` tags pin a `sha384` SRI hash plus `crossorigin="anonymous"` so a tampered or stale CDN response is rejected by the browser. Regenerate the hash whenever the version bumps (e.g. `curl --ssl-no-revoke -sS <url> | openssl dgst -sha384 -binary | openssl base64 -A`). ffmpeg.wasm stays unhashed because it loads its own sub-resources at runtime.
+
 ## Live URLs
 
 - GitHub repo: https://github.com/leegemma/maxiedit-prototype

@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-04-29 | (this commit) | 12_single을 10_result와 골격 통일(.split-track top:69 height:522, image/text 5:5, indicator top:615), 출력 1080×1434로 통일, 다음/닫기/뒤로 버튼 다듬기(높이 32, padding 0 12 1, 좌측 8), bottom_layer_select 우측 padding 0 + 썸네일 영역 flex:1 1 0으로 확장 + 5번째 이상 추가 시 자동 스크롤, letter-spacing 0.18em 일괄 제거, GNB 탭 좌우 padding 14→10, btn-text-single/flip/btn-reset 라벨 크기 일괄 +1px |
+| 2026-04-30 | (this commit) | TODO #1 처리 — Sortable.js 1.15.2 / html2canvas 1.4.1 `<script>`에 SRI(sha384) + crossorigin="anonymous" 적용. CLAUDE.md "External dependencies"에 해시 갱신 규칙 한 줄 추가. ffmpeg.wasm은 lazy라 제외 |
+| 2026-04-29 | 89fa7ca | 12_single을 10_result와 골격 통일(.split-track top:69 height:522, image/text 5:5, indicator top:615), 출력 1080×1434로 통일, 다음/닫기/뒤로 버튼 다듬기(높이 32, padding 0 12 1, 좌측 8), bottom_layer_select 우측 padding 0 + 썸네일 영역 flex:1 1 0으로 확장 + 5번째 이상 추가 시 자동 스크롤, letter-spacing 0.18em 일괄 제거, GNB 탭 좌우 padding 14→10, btn-text-single/flip/btn-reset 라벨 크기 일괄 +1px |
 | 2026-04-29 | c40871a | 아이콘 전면 Heroicons outline 전환(11종, stroke 1.5), thumb-remove 빨간 원형 + X 아이콘, bottom_layer_select 썸네일 30% 검정 scrim, 12_single 하단 툴바 좌정렬, 다이얼로그 메시지 줄바꿈, 다음/초기화/다운로드/텍스트/뒤집기/확인 버튼 폰트 +1px |
 | 2026-04-28 | e7b9544 | SKILLS.md 추가 — 어떤 Claude Code 스킬을 언제 쓸지 정책 문서화 |
 | 2026-04-28 | acf43c3 | HISTORY.md 도입 — 모든 코드 커밋에 doc 업데이트를 함께 stage하는 정책 명문화 |

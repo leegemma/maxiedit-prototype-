@@ -19,6 +19,7 @@
 | 🟢 9 | OSS 라이선스 고지 페이지 | ✅ 완료 | 1회 + 연 1회 | X |
 | 🔴 10 | 좁은 단말 보호 (반응형 옵션 B) | ✅ 완료 | 1회 | X |
 | 🟡 11 | 진짜 반응형 (옵션 C) | ⏳ 미완료 | 1회 + Figma 동반 | X |
+| 🟡 12 | iOS 앱 출시 (Capacitor iOS) | ⏳ 미완료 | 1회 + 연 1회 Xcode/SDK 점검 | X |
 
 ---
 
@@ -419,6 +420,155 @@ HISTORY.md.
 - 1단계: 토큰 100% 적용, 시각 회귀 0
 - 2단계: tablet 시뮬레이터에서 의도한 레이아웃 동작, 393~412 회귀 0
 - 3단계: 별도 트랙
+
+---
+
+## 🟡 12. iOS 앱 출시 (Capacitor iOS)
+
+- [ ] **상태**: 미완료 (안드로이드 Play Store 출시 = TODO #3 사용자 작업 완료 후 시작 권장)
+
+**왜**: 현재 Capacitor 안드로이드 스캐폴드만 있음. iOS는 0. 같은 웹 코드베이스로 iOS 앱까지 커버하면 운영 비용 대비 도달 범위 큼. 안드로이드 출시 안정화 후 진입해야 같은 버그를 두 번 심사 받지 않음.
+
+**전제 조건**:
+- TODO #3 (Play Store 출시) 사용자 작업 완료 + 1주 안정성 확인
+- Apple Developer Program 가입 ($99/년) — 사용자 작업
+- Mac + Xcode 16+ + CocoaPods (`brew install cocoapods`)
+- 빌드 클론은 안드로이드와 동일하게 `~/dev/maxiedit-prototype-` 사용 (iCloud / 한국어 폴더 금지)
+
+**범위**:
+- iOS 17+ 타겟 (현재 웹 코드의 `100dvh` / `navigator.share` 가정과 정합)
+- iPhone 전용 (iPad 대응은 옵션 C / TODO #11 영역)
+- 기능은 웹과 동일 — 신규 기능 추가 금지
+
+---
+
+### 1단계 — Capacitor iOS 플랫폼 추가 (반나절)
+
+**Claude Code 프롬프트**:
+```
+TODO #12 1단계 — Capacitor iOS 스캐폴드 추가.
+
+1) package.json:
+   - devDependencies에 @capacitor/ios 추가 (안드로이드와 동일 6.2.x)
+   - scripts에 cap:add:ios / cap:sync:ios / cap:open:ios / cap:run:ios /
+     cap:build:ios 추가 (안드로이드 패턴 그대로)
+
+2) capacitor.config.json에 ios 키 추가:
+   - contentInset: 'always'
+   - backgroundColor: '#000000' (안드로이드와 동일, 흰 플래시 방지)
+   - scrollEnabled: false (전체화면 고정)
+
+3) .gitignore에 iOS 관련 패턴 추가:
+   - ios/App/Pods/
+   - ios/App/App/public/
+   - ios/App/App/capacitor.config.json (자동 생성물)
+   - *.xcuserstate, xcuserdata/
+
+4) 실행은 사용자가 ~/dev/maxiedit-prototype-에서:
+   npm install
+   npm run cap:add:ios
+   npx cap sync ios
+
+5) CLAUDE.md "Android build (Capacitor)" 섹션 옆에 "iOS build" 섹션 신규.
+   - 빌드 위치 제약 (한글/공백 경로 금지)
+   - cap:sync ios가 www/ → ios/App/App/public/ 복사한다는 점
+   - .xcworkspace 열어야지 .xcodeproj 직접 열면 안 된다는 점
+
+6) HISTORY.md 한 줄.
+```
+
+**완료 기준**:
+- `ios/` 폴더 생성
+- Xcode에서 `App.xcworkspace` 열렸을 때 빌드 에러 0
+- iOS 시뮬레이터(iPhone 15)에서 앱 실행, 00_home 화면 진입 확인
+
+---
+
+### 2단계 — iOS 권한 + 앱 메타데이터 (1일)
+
+**Claude Code 프롬프트**:
+```
+TODO #12 2단계 — iOS 권한 문구 + 앱 아이콘 + 런치 스크린.
+
+1) ios/App/App/Info.plist에 권한 사유 문구 추가 (모두 한국어):
+   - NSPhotoLibraryUsageDescription:
+     "선택한 사진/영상을 편집하기 위해 사진 라이브러리에 접근합니다."
+   - NSPhotoLibraryAddUsageDescription:
+     "편집한 결과물을 사진 앱에 저장합니다."
+   - 위 두 문구 없으면 iOS가 권한 다이얼로그 띄우지 않고 앱 종료시킴
+
+2) UI 톤 매칭:
+   - UIStatusBarStyle = UIStatusBarStyleLightContent (검정 배경에 흰 글씨)
+   - UIViewControllerBasedStatusBarAppearance = NO
+   - 기본 background를 #000으로 (Capacitor 설정 외 추가 보정 필요 시)
+
+3) 앱 아이콘:
+   - 안드로이드 ic_launcher 1024x1024 마스터에서 iOS AppIcon.appiconset 생성
+   - 또는 사용자가 새 마스터 제공 시 그걸로
+   - Assets.xcassets/AppIcon.appiconset/ 자동 슬롯 채우기
+
+4) 런치 스크린:
+   - LaunchScreen.storyboard 단색 검정 (#000)
+   - 로고 가운데 (앱 아이콘 축소판) — 또는 사용자 결정 후
+
+5) Bundle Identifier 확인:
+   - com.leegemma.maxiedit (안드로이드와 동일)
+   - Display Name: MaxiEdit
+
+6) CLAUDE.md "iOS build" 섹션에 권한 문구 정책 명시 — 권한 추가 시
+   안드로이드 manifest와 iOS Info.plist를 한 커밋에 함께 갱신.
+
+7) HISTORY.md 한 줄.
+```
+
+**완료 기준**:
+- iOS 시뮬레이터 + 실기에서 사진 권한 다이얼로그 정상 표시
+- 권한 거부 시 앱이 크래시 없이 안내
+- 런치 화면 흰 플래시 0
+
+---
+
+### 3단계 — 회귀 테스트 + iOS 특화 이슈 처리 (2~3일)
+
+**점검 포인트** (docs/qa-checklist.md에 iOS 네이티브 항목 신설):
+
+- **MediaRecorder 한계** — iOS WKWebView는 안드로이드 Chrome보다 더 제한적. 거의 확실히 **ffmpeg.wasm 폴백** 타게 됨.
+  - 첫 영상 저장 시 ~25MB 다운로드 UX 검토
+  - 결정 포인트: 받아들이고 안내 토스트만 추가할지 vs `@capacitor-community/media` 같은 네이티브 인코딩 플러그인 도입할지
+- **`navigator.share({ files })`** — iOS는 잘 동작. "사진 앱에 저장" 자동 노출 확인
+- **`100dvh` / 키보드 처리** — iOS 17+ Safari WebView OK 가정, 11_textedit 모달이 키보드에 안 가려지는지 확인
+- **Sortable.js 롱프레스** — 햅틱 없으면 어색. `@capacitor/haptics` 추가 검토 (선택)
+- **Status bar overlap** — `safe-area-inset-top` 가 `app-frame`에 들어가는지 확인
+
+**완료 기준**:
+- iPhone SE / 13 / 15 시뮬레이터 + 실기 1대 이상에서 docs/qa-checklist.md A1~A4 + iOS 네이티브 신규 항목 통과
+- 영상 저장 1회 성공 (시간 측정 후 25MB 폴백 UX 결정)
+- HISTORY.md 결과 한 줄
+
+---
+
+### 4단계 — TestFlight + App Store 등록 (1일 작업 + Apple 심사 3~7일)
+
+**사용자 작업** (Claude Code 영역 밖):
+- App Store Connect에서 앱 생성, Bundle ID `com.leegemma.maxiedit` 등록
+- Xcode → Archive → Distribute → TestFlight 업로드
+- **Privacy nutrition label** — TODO #3 정책 그대로: "수집 안 함, 디바이스 내 처리"
+  - `docs/privacy.html` URL 그대로 재사용
+- **연령 등급** — 사용자 생성 콘텐츠 있음 → 12+
+- **App Review 대비** — "왜 사진 권한이 필요한가" 시연 영상 첨부 권장 (Apple은 안드로이드보다 깐깐)
+
+**완료 기준**:
+- TestFlight 내부 테스트 1회 통과
+- App Store 심사 통과 + 정식 출시
+- HISTORY.md 한 줄
+
+---
+
+### 5단계 — 운영 (지속)
+
+- 매 push마다 안드로이드와 동일하게 `npm run cap:sync ios` + `?v=N` 증분
+- 연 1회 Xcode 메이저 업데이트 시점에 Capacitor iOS 의존성 점검 (안드로이드 SDK 강상향 정책과 별도)
+- iOS 메이저 버전 출시(매년 9월) 후 1주 안에 실기 회귀 (docs/qa-checklist.md에 iOS-OS-bump 행 추가)
 
 ---
 

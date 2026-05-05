@@ -1665,10 +1665,24 @@
     // where cordova-plugin-photo-library is bridged. In a browser (local dev,
     // Live Server) the plugin is undefined and the loader rejects, falling
     // back to the canvas swatches above.
+    //
+    // The plugin's `thumbnailURL` field uses a `cdvphotolibrary://` custom URL
+    // scheme that was designed for UIWebView-era Cordova; Capacitor's WKWebView
+    // does NOT intercept it (URLProtocol vs. URLSchemeHandler), so those URLs
+    // would fail to render as <img src> or `background-image: url(...)`. Hence
+    // the per-item `getThumbnail()` round-trip below — that returns a real Blob
+    // we can wrap in `URL.createObjectURL()` and feed straight to the picker.
     const RECENT_PHOTO_LIMIT = 30;
     const loadDeviceRecentPhotos = () => new Promise((resolve, reject) => {
       const plugin = window.cordova && window.cordova.plugins && window.cordova.plugins.photoLibrary;
       if (!plugin) { reject(new Error('photoLibrary plugin unavailable')); return; }
+      const fetchThumb = (item) => new Promise((res) => {
+        plugin.getThumbnail(item,
+          (blob) => res({ item, url: URL.createObjectURL(blob) }),
+          () => res({ item, url: null }),
+          { thumbnailWidth: 400, thumbnailHeight: 600, quality: 0.7 }
+        );
+      });
       plugin.requestAuthorization(
         () => {
           const items = [];
@@ -1686,16 +1700,23 @@
                 items.sort((a, b) =>
                   new Date(b.creationDate || 0) - new Date(a.creationDate || 0)
                 );
-                for (const item of items.slice(0, RECENT_PHOTO_LIMIT)) {
-                  const isVideo = (item.mimeType || '').startsWith('video/');
-                  photos.push({
-                    url: item.thumbnailURL || item.photoURL,
-                    originalUrl: item.photoURL || item.thumbnailURL,
-                    name: item.fileName || `photo-${item.id}`,
-                    type: isVideo ? 'video' : 'image',
-                  });
-                }
-                resolve(items.length);
+                const slice = items.slice(0, RECENT_PHOTO_LIMIT);
+                Promise.all(slice.map(fetchThumb)).then((loaded) => {
+                  for (const { item, url } of loaded) {
+                    if (!url) continue;
+                    const isVideo = (item.mimeType || '').startsWith('video/');
+                    photos.push({
+                      url,
+                      // For now the same thumbnail blob doubles as the export
+                      // source. If full-res export quality matters, swap this
+                      // for a `getPhoto()` round-trip at export time.
+                      originalUrl: url,
+                      name: item.fileName || `photo-${item.id}`,
+                      type: isVideo ? 'video' : 'image',
+                    });
+                  }
+                  resolve(photos.length);
+                });
               }
             },
             (err) => { if (!settled) { settled = true; reject(err); } },

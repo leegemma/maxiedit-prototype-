@@ -1625,6 +1625,41 @@
       '#d2ecff', '#dcefe7', '#e7e7e7',
       '#d1f2c2', '#ebdff7', '#d9d9d9'
     ];
+
+    // PROTOTYPE — soft pastel "photos" generated at runtime so the 최근항목
+    // tab feels populated on edit-page entry. Replace with real device-photo
+    // loading (Capacitor/Cordova photo-library plugin → Info.plist permission
+    // → photos[].push) when wiring native PhotoKit access.
+    const PROTO_PALETTE = [
+      ['#ffd4cc', '#ff9a8b'], ['#cfe9ff', '#7da3ff'], ['#e3d4ff', '#b990ff'],
+      ['#d6f1d0', '#7fc97f'], ['#fff1c4', '#f5c945'], ['#ffd0e0', '#ff7da6'],
+      ['#cdeae6', '#5ba8a0'], ['#ffe2c4', '#ff9a4f'], ['#dfd9ff', '#8b7ff5'],
+      ['#fff3d4', '#dab66c'], ['#cfe0ff', '#5e7fcd'], ['#e7d8c5', '#8c6f4d'],
+    ];
+    const generatePrototypePhotoUrl = (top, bottom, num) => {
+      const c = document.createElement('canvas');
+      c.width = 400; c.height = 600;
+      const ctx = c.getContext('2d');
+      const g = ctx.createLinearGradient(0, 0, 400, 600);
+      g.addColorStop(0, top);
+      g.addColorStop(1, bottom);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 400, 600);
+      // Subtle number stamp so the user can tell samples apart.
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+      ctx.font = '300 88px "Inter", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(num).padStart(2, '0'), 200, 300);
+      return c.toDataURL('image/jpeg', 0.85);
+    };
+    const loadPrototypeRecentPhotos = () => {
+      if (photos.length > 0) return;
+      PROTO_PALETTE.forEach(([top, bottom], i) => {
+        const url = generatePrototypePhotoUrl(top, bottom, i + 1);
+        photos.push({ url, originalUrl: url, name: `sample-${i + 1}.jpg`, type: 'image' });
+      });
+    };
     // Media loaded from the device (via <input type="file" accept="image/*,video/*">).
     // Each entry: {
     //   url,         // object URL used as visible thumbnail (first frame for videos)
@@ -2135,9 +2170,15 @@
           void bottomLayerSelectEl.offsetWidth;
           bottomLayerSelectEl.classList.add('is-entering');
         }
-        // Auto-open the device photo picker when entering edit with no photos.
-        // Must happen in the same user-gesture turn as the button tap for iOS to allow it.
-        if (photos.length === 0) photoInput.click();
+        // Pre-populate the picker so the 최근항목 tab feels populated on entry —
+        // no system picker pops up. The "+" tile inside the grid lets the user
+        // append their own photos via the OS picker later.
+        // PROTOTYPE: samples are canvas-generated. Replace with real PhotoKit
+        // access via Capacitor/Cordova photo-library plugin in a future pass.
+        if (photos.length === 0) {
+          loadPrototypeRecentPhotos();
+          buildPicker();
+        }
       }
     };
 

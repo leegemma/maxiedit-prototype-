@@ -187,6 +187,12 @@ The track also listens for **touch swipe**: `touch-action: pan-y` on the inner l
 
 **One-shot animation replay**: `.home-card--pulse` is added with a forced reflow (`void el.offsetWidth`) so the same animation can re-fire on a repeat tap. Use this pattern whenever an animation needs to retrigger on a state change rather than play once on mount.
 
+## Picker prototype data
+
+Entering `02_edit` with `photos[]` empty calls `loadPrototypeRecentPhotos()` ([index.html](index.html)) — this pushes 12 canvas-generated pastel-gradient JPEG dataURLs into `photos[]` so the 최근항목 tab grid feels populated without the user driving the system picker. The `"+"` tile at the end of the grid still opens the real OS file picker for users who want their own media; new picks append to the same `photos[]` array.
+
+This is **prototype scaffolding only**. Real device-photo loading (auto-listing the user's photo library on app launch, with permission-aware fallback) is a future task — it needs a Capacitor/Cordova photo-library plugin, `NSPhotoLibraryUsageDescription` in the iOS `Info.plist` (TODO #12 stage 2 already plans this string), and a permission-denied fallback that re-enables the auto-trigger of `<input type="file">`. Don't ship the swatch generator to production; replace it with the real loader before any public launch.
+
 ## Error handling
 
 A pair of global handlers sits at the top of `index.html`'s main `<script>`:

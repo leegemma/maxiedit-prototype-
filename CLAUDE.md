@@ -157,6 +157,36 @@ The whole chrome uses a single design vocabulary:
 
 When designing a new chrome surface, copy from these tokens. Don't invent a new pill or new border radius.
 
+## Motion tokens
+
+Defined as CSS variables in `:root` ([index.html](index.html)) so easings/durations are referenced by name rather than raw `cubic-bezier(...)` strings.
+
+| Variable | Value | Use |
+|---|---|---|
+| `--ease-snap` | `cubic-bezier(0.22, 0.9, 0.3, 1)` | snappy entrance (used by `bls-slide-up`) |
+| `--ease-out-soft` | `cubic-bezier(0.2, 0.9, 0.2, 1)` | soft decelerate (toast, modal cards, bottom sheet) |
+| `--ease-overshoot` | `cubic-bezier(0.34, 1.56, 0.64, 1)` | playful overshoot (selection check pop) |
+| `--ease-standard` | `cubic-bezier(0.4, 0, 0.2, 1)` | standard ease (loading sweep) |
+| `--dur-press` | `0.08s` | tap feedback (`:active { transform: scale(0.97) }`) |
+| `--dur-fast` | `0.15s` | hover/press color shift |
+| `--dur-page` | `0.18s` | modal backdrop fade |
+| `--dur-base` | `0.22s` | modal card scale-in, check pop |
+| `--dur-sheet` | `0.32s` | bottom-sheet (`11_textedit`) slide |
+
+A single `@media (prefers-reduced-motion: reduce)` block at the top of `<style>` flattens every transition/animation to ~0ms when the OS-level setting is on (WCAG 2.1 SC 2.3.3). Use `transition` / `animation` properties for new motion so the global override catches them.
+
+**Modal visibility**: confirm / download / textedit modals are class-driven (`.is-open`), not `[hidden]`-driven, because `display: none` would cancel the entrance transitions. `showModal()` / `hideModal()` only toggle `.is-open`; the HTML `hidden` attr is present once on initial markup and removed permanently on first open. Page navigation still uses `[hidden]` (pages don't animate).
+
+**Long-press drag-ready ring**: `.thumb.sortable-chosen` is added on touchstart, but `Sortable.create({ delay: 300 })` is what gates the actual drag. The chosen styles (`scale(1.08)` + yellow `#fffb8a` ring + lift shadow) use `transition-delay: 0.3s` so the ring only appears at the moment drag becomes available — communicating "you can move me now". If the user releases before 300ms, the rule is gone before the delay elapses and nothing flashes. The 0.3s value here must stay in sync with the Sortable `delay` option.
+
+**Disabled cards stay tappable**: `.home-card.is-disabled` uses `aria-disabled="true"` rather than the HTML `disabled` attribute, because `disabled` blocks `:active` and click events. A click handler shows a `준비 중이에요` toast + a one-shot `card-pulse` animation so the surface feels responsive without suggesting the action succeeded.
+
+**Home tab carousel** (Toss shopping-tab pattern): `.home-tab-track` is an `overflow:hidden` viewport; `.home-tab-track-inner` is a flex row at `width: calc(200% + 16px)` with `gap: 16px` and each `.home-section[data-tab]` taking `flex: 0 0 calc(50% - 8px)`. The 16px gap is a visible gutter between tabs during the swipe — change CSS `gap` and the JS `HOME_TAB_GAP` together if you ever tune it. JS sets `data-active` on the inner track (`"home"` or `"upcoming"`) and CSS translates via `translateX(0)` ↔ `translateX(calc(-50% - 8px))`. Both sections always render — the offscreen one is translated out, not `[hidden]`. Sections without `data-tab` (e.g., the topbar/tabs sticky head) sit OUTSIDE the track and remain visible on every tab. To add a third tab, extend `width` to `calc(300% + 32px)`, give each section `flex: 0 0 calc(33.333% - 10.667px)`, and add a `[data-active="..."]` rule with `translateX(calc(-100% - 16px))` for the third one.
+
+The track also listens for **touch swipe**: `touch-action: pan-y` on the inner lets the browser keep vertical scroll while we intercept horizontal pans. On `touchstart` we record the base tab index; on the first significant `touchmove` we lock the gesture axis (horizontal vs vertical) so the user can still scroll the page vertically through the tab area. While horizontal-locked, the track follows the finger 1:1 with rubber-band resistance past the edges. On `touchend` we snap to the next tab if the drag exceeded 25% of viewport width OR if the user flicked (velocity > 0.4 px/ms with > 30px traveled). All snap motion is the same CSS transition that powers tap-to-tab — there's only one path that moves the track.
+
+**One-shot animation replay**: `.home-card--pulse` is added with a forced reflow (`void el.offsetWidth`) so the same animation can re-fire on a repeat tap. Use this pattern whenever an animation needs to retrigger on a state change rather than play once on mount.
+
 ## Error handling
 
 A pair of global handlers sits at the top of `index.html`'s main `<script>`:

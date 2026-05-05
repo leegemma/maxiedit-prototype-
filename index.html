@@ -22,6 +22,26 @@
          shrinks down to 100vw on 320~393 phones (iPhone SE etc). Vertical
          dimensions stay fixed; only width tracks the viewport. */
       --frame-width: min(393px, 100vw);
+      /* motion tokens — see CLAUDE.md "Motion tokens" */
+      --ease-snap: cubic-bezier(0.22, 0.9, 0.3, 1);
+      --ease-out-soft: cubic-bezier(0.2, 0.9, 0.2, 1);
+      --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+      --dur-press: 0.08s;
+      --dur-fast: 0.15s;
+      --dur-page: 0.18s;
+      --dur-base: 0.22s;
+      --dur-sheet: 0.32s;
+    }
+
+    /* Honor OS-level "reduce motion" — flatten all transitions/animations
+       to near-zero so the UI still updates instantly without movement. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
     }
 
     /* phone-sized frame that contains all pages and the textedit modal */
@@ -229,7 +249,10 @@
       color: #333;
     }
 
-    /* modal — only used by the textedit popup; sits above the current page */
+    /* modal — backdrop + centered card. Visibility is class-driven so
+       both backdrop and card can transition. The HTML `hidden` attr is
+       only present on initial markup; showModal() removes it on first
+       open and from then on we toggle .is-open instead. */
     .modal {
       position: absolute;
       top: 0;
@@ -237,14 +260,23 @@
       width: 100%;
       height: 100%;
       background: rgba(0, 0, 0, 0.5);
-      display: none;
+      display: flex;
       justify-content: center;
       align-items: center;
       z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity var(--dur-page) ease, visibility 0s linear var(--dur-page);
     }
-    .modal.is-open { display: flex !important; }
+    .modal.is-open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition: opacity var(--dur-page) ease, visibility 0s linear 0s;
+    }
 
-    /* 11_textedit modal */
+    /* 11_textedit modal — bottom-sheet motion (slides up from below) */
     .textedit-modal {
       width: 320px;
       max-width: 85vw;
@@ -255,7 +287,10 @@
       flex-direction: column;
       overflow: hidden;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+      transform: translateY(100%);
+      transition: transform var(--dur-sheet) var(--ease-out-soft);
     }
+    .modal.is-open .textedit-modal { transform: translateY(0); }
     .textedit-list {
       flex: 1 1 auto;
       min-height: 0;
@@ -336,7 +371,10 @@
       flex-direction: column;
       gap: 16px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+      transform: scale(0.96);
+      transition: transform var(--dur-base) var(--ease-out-soft);
     }
+    .modal.is-open .confirm-card { transform: scale(1); }
     .confirm-text {
       font-family: inherit;
       font-size: 14px;
@@ -388,7 +426,10 @@
       flex-direction: column;
       gap: 10px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+      transform: scale(0.96);
+      transition: transform var(--dur-base) var(--ease-out-soft);
     }
+    .modal.is-open .download-card { transform: scale(1); }
     .download-card h3 {
       font-family: inherit;
       font-size: 11px;
@@ -788,7 +829,22 @@
       pointer-events: none;
     }
     .thumb.sortable-ghost { opacity: 0.4; }
-    .thumb.sortable-chosen { transform: scale(1.08); box-shadow: 0 6px 16px rgba(0,0,0,0.5); z-index: 10; }
+    /* sortable-chosen is added on touchstart, but Sortable's delay (300ms)
+       is what gates actual drag activation. We delay the lift visual by the
+       same amount via transition-delay so the yellow ring + scale appears
+       AT the moment drag becomes available — communicating "you can move
+       me now". Release before 300ms and the rule is gone before the delay
+       elapses, so nothing flashes. Snap-back on release uses the base
+       `.thumb` transition (no delay).
+       Note: 0.3s here must stay in sync with Sortable.create({ delay: 300 }). */
+    .thumb.sortable-chosen,
+    .thumb.sortable-chosen:active {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 2px #fffb8a, 0 6px 16px rgba(0,0,0,0.5);
+      z-index: 10;
+      transition: transform var(--dur-base) var(--ease-out-soft) 0.3s,
+                  box-shadow var(--dur-base) var(--ease-out-soft) 0.3s;
+    }
     .thumb-num {
       position: absolute;
       left: 4px;
@@ -1232,6 +1288,103 @@
     .toast.is-open .toast-check-mark { animation: toast-mark 0.35s 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
     @keyframes toast-ring { to { stroke-dashoffset: 0; } }
     @keyframes toast-mark { to { stroke-dashoffset: 0; } }
+
+    /* ─── Tier 1 motion: press feedback ──────────────────────────────────
+       A subtle scale-down on tap that complements each element's existing
+       :active opacity rule. The base rule sets a unified transition so the
+       release also eases back; selectors that previously had only opacity
+       transitions now also transition transform with the same timing.
+       Net change on existing animations: cat-tab 12ms→15ms (imperceptible).
+       `.thumb` is intentionally excluded — its press feedback is the
+       sortable-chosen lift below, which would conflict with scale(0.97). */
+    .photo-item, .thumb-remove,
+    .home-card,
+    .btn-icon, .btn-start, .btn-next-main, .btn-download, .btn-reset,
+    .btn-textedit-confirm, .btn-textedit-cancel,
+    .confirm-actions button,
+    .download-card button,
+    .cat-tab, .home-tab {
+      transition-property: opacity, background-color, color, border-color, transform;
+      transition-duration: var(--dur-fast), var(--dur-fast), var(--dur-fast), var(--dur-fast), var(--dur-press);
+      transition-timing-function: ease;
+    }
+    .photo-item:active, .thumb-remove:active,
+    .home-card:not([aria-disabled="true"]):active,
+    .btn-icon:active, .btn-start:active, .btn-next-main:active, .btn-download:active, .btn-reset:active,
+    .btn-textedit-confirm:active, .btn-textedit-cancel:active,
+    .confirm-actions button:active,
+    .download-card button:active,
+    .cat-tab:active, .home-tab:active {
+      transform: scale(0.97);
+    }
+    /* Disabled cards: a softer scale + brief pulse-back so the tap feels
+       acknowledged (paired with a "준비 중이에요" toast in JS). */
+    .home-card[aria-disabled="true"]:active { transform: scale(0.985); }
+
+    /* ─── Tier 1 motion: selection check pop ─────────────────────────────
+       When .icon-check toggles off→on, this runs once. Same element keeps
+       the .on class through reorders/renumbering, so it does not re-fire
+       just because the badge number changes. */
+    @keyframes check-pop {
+      0%   { transform: scale(0); }
+      60%  { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+    .icon-check.on { animation: check-pop var(--dur-base) var(--ease-overshoot); }
+
+    /* ─── Home tab carousel (Toss shopping-tab pattern) ──────────────────
+       Both sections live in a horizontal track that translates between
+       tabs; only the active one is visible inside the overflow:hidden
+       viewport. Tab tap → JS sets data-active on the inner track →
+       transform animates from 0 to -50%. The unconditional sections
+       (those without data-tab) sit OUTSIDE this track and remain visible
+       on every tab. Track height tracks the active section because the
+       inactive section is offscreen but still occupies the layout — for
+       MaxiEdit's two-tab home this is fine since both are short. */
+    .home-tab-track {
+      position: relative;
+      overflow: hidden;
+      /* No width / margin / padding tricks — let the track stretch naturally
+         to #page-home's content-box (page width minus 20px page padding each
+         side). The original margin: 0 -20 + padding: 0 20 trick was meant to
+         extend a background through the page padding, but the track has no
+         visible decoration; combined with `width: 200%` on the inner it
+         was making sections narrower than the visible viewport, which let
+         the next tab leak in past `overflow: hidden`. */
+    }
+    .home-tab-track-inner {
+      display: flex;
+      align-items: flex-start;
+      /* 16px gutter between tabs while swiping (matches Toss). The inner
+         is V (viewport) per section + 16px gap × 1, so total = 2V + 16. */
+      gap: 16px;
+      width: calc(200% + 16px);
+      transform: translateX(0);
+      transition: transform var(--dur-sheet) var(--ease-snap);
+      will-change: transform;
+      /* Let the browser keep handling vertical scroll; we intercept
+         horizontal pan ourselves via touchstart/move/end below. */
+      touch-action: pan-y;
+    }
+    .home-tab-track-inner > .home-section {
+      /* 50% of inner is V+8; subtract half the gap to land on V exactly. */
+      flex: 0 0 calc(50% - 8px);
+      min-width: 0;
+      margin: 0; /* override the default 0 0 24px so the carousel rows align */
+    }
+    /* Snap target for upcoming = -(V + 16). In inner terms that is
+       -(50% + 8px) since 50% of inner = V+8. */
+    .home-tab-track-inner[data-active="upcoming"] { transform: translateX(calc(-50% - 8px)); }
+
+    /* ─── Disabled-card pulse ────────────────────────────────────────────
+       One-shot wiggle to acknowledge a tap on a 준비중 card without
+       suggesting the action succeeded. The toast carries the verbal cue. */
+    @keyframes card-pulse {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(0.985); }
+      100% { transform: scale(1); }
+    }
+    .home-card--pulse { animation: card-pulse 0.32s var(--ease-out-soft); }
   </style>
 </head>
 <body>
@@ -1252,26 +1405,30 @@
         <button class="home-tab" type="button" role="tab" aria-selected="false" data-tab="upcoming">준비중</button>
       </div>
     </div>
-    <section class="home-section" data-tab="home">
-      <h2 class="home-section-title">새로 나왔어요</h2>
-      <button class="home-card is-featured" type="button" id="btn-start" data-name="btn_start">
-        <img class="home-card-image" src="images/thum_feed_image01.png" alt="" aria-hidden="true">
-        <span class="home-card-overlay" aria-hidden="true"></span>
-        <span class="home-badge is-new">New</span>
-        <span class="home-card-title">매거진느낌 피드</span>
-      </button>
-    </section>
-    <section class="home-section">
-      <h2 class="home-section-title">ig 피드 만들기</h2>
-      <button class="home-card is-disabled" type="button" disabled data-name="card_feed_crop">
-        <span class="home-badge is-soon">업데이트 예정</span>
-        <span class="home-card-title">피드자르기</span>
-      </button>
-      <button class="home-card is-disabled" type="button" disabled data-name="card_slide_feed">
-        <span class="home-badge is-soon">업데이트 예정</span>
-        <span class="home-card-title">슬라이드 피드</span>
-      </button>
-    </section>
+    <div class="home-tab-track">
+      <div class="home-tab-track-inner" id="home-tab-track" data-active="home">
+        <section class="home-section" data-tab="home">
+          <h2 class="home-section-title">새로 나왔어요</h2>
+          <button class="home-card is-featured" type="button" id="btn-start" data-name="btn_start">
+            <img class="home-card-image" src="images/thum_feed_image01.png" alt="" aria-hidden="true">
+            <span class="home-card-overlay" aria-hidden="true"></span>
+            <span class="home-badge is-new">New</span>
+            <span class="home-card-title">매거진느낌 피드</span>
+          </button>
+        </section>
+        <section class="home-section" data-tab="upcoming">
+          <h2 class="home-section-title">ig 피드 만들기</h2>
+          <button class="home-card is-disabled" type="button" aria-disabled="true" data-name="card_feed_crop">
+            <span class="home-badge is-soon">업데이트 예정</span>
+            <span class="home-card-title">피드자르기</span>
+          </button>
+          <button class="home-card is-disabled" type="button" aria-disabled="true" data-name="card_slide_feed">
+            <span class="home-badge is-soon">업데이트 예정</span>
+            <span class="home-card-title">슬라이드 피드</span>
+          </button>
+        </section>
+      </div>
+    </div>
   </section>
 
   <!-- 02_edit page -->
@@ -1966,16 +2123,16 @@
       }
     };
 
-    // Modal helpers — only used by textedit.
+    // Modal helpers — visibility is class-driven so backdrop + card can
+    // transition in/out (see ".modal" CSS). The HTML `hidden` attr is only
+    // present on initial markup; the first showModal call removes it and
+    // we never re-add it. After that, .is-open alone controls visibility.
     const showModal = (el) => {
       el.removeAttribute('hidden');
       el.classList.add('is-open');
-      el.style.display = 'flex';
     };
     const hideModal = (el) => {
       el.classList.remove('is-open');
-      el.style.display = '';
-      el.setAttribute('hidden', '');
     };
 
     // Confirm dialog — promise-based, reused by X / reset on edit page.
@@ -2012,23 +2169,99 @@
 
     btnStart.addEventListener('click', () => goTo('edit'));
 
-    // 00_home — tab toggle (홈 / 준비중). data-tab on each section pairs with
-    // data-tab on the corresponding button; only matching sections stay visible.
+    // 00_home — tab toggle (홈 / 준비중). Toss-shopping-tab carousel:
+    // both sections live in #home-tab-track and the track translates between
+    // them. Tab data-tab values must match the track's expected data-active
+    // values ("home" / "upcoming"). The same setActiveTab() runs from both
+    // tab clicks and swipe-end so the visual + aria + indicator stay in sync.
     const homeTabs = document.querySelectorAll('#page-home .home-tab');
-    const homeSections = document.querySelectorAll('#page-home .home-section');
+    const homeTabTrack = document.getElementById('home-tab-track');
+    const homeTabOrder = ['home', 'upcoming'];
+    // Pixel gutter between sections during swipe — must match the CSS `gap`
+    // declared on `.home-tab-track-inner`. If you change one, change both.
+    const HOME_TAB_GAP = 16;
+    const setActiveTab = (target) => {
+      homeTabs.forEach((t) => {
+        const active = t.dataset.tab === target;
+        t.classList.toggle('is-active', active);
+        t.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      homeTabTrack.dataset.active = target;
+    };
     homeTabs.forEach((tab) => {
-      tab.addEventListener('click', () => {
-        const target = tab.dataset.tab;
-        homeTabs.forEach((t) => {
-          const active = t === tab;
-          t.classList.toggle('is-active', active);
-          t.setAttribute('aria-selected', active ? 'true' : 'false');
-        });
-        homeSections.forEach((s) => {
-          // Sections without data-tab are unconditional (visible on every tab).
-          if (!s.dataset.tab) return;
-          s.hidden = s.dataset.tab !== target;
-        });
+      tab.addEventListener('click', () => setActiveTab(tab.dataset.tab));
+    });
+
+    // Touch swipe — drag the track horizontally with your finger; release
+    // past 25% threshold (or with notable velocity) snaps to the next tab,
+    // otherwise snaps back. Vertical scroll wins when the gesture starts
+    // mostly vertical (axis lock decided on first meaningful move).
+    let swipeStartX = null;
+    let swipeStartY = null;
+    let swipeStartTime = 0;
+    let swipeBaseIdx = 0;     // 0 = home, 1 = upcoming
+    let swipeAxis = null;     // null | 'h' | 'v'
+    homeTabTrack.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      swipeStartX = e.touches[0].clientX;
+      swipeStartY = e.touches[0].clientY;
+      swipeStartTime = performance.now();
+      swipeBaseIdx = Math.max(0, homeTabOrder.indexOf(homeTabTrack.dataset.active || 'home'));
+      swipeAxis = null;
+    }, { passive: true });
+    homeTabTrack.addEventListener('touchmove', (e) => {
+      if (swipeStartX === null) return;
+      const dx = e.touches[0].clientX - swipeStartX;
+      const dy = e.touches[0].clientY - swipeStartY;
+      if (swipeAxis === null) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        swipeAxis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+        if (swipeAxis === 'h') homeTabTrack.style.transition = 'none';
+      }
+      if (swipeAxis !== 'h') return;
+      // Pixel-based tracking so the gap between sections doesn't desync the
+      // finger from the track. Step distance per tab = viewport + gap.
+      const vw = homeTabTrack.parentElement.offsetWidth;
+      const step = vw + HOME_TAB_GAP;
+      const basePx = swipeBaseIdx * -step;
+      let px = basePx + dx;
+      const minPx = -(homeTabOrder.length - 1) * step;
+      const maxPx = 0;
+      // Rubber-band past the edges so the track doesn't slide off into nothing.
+      if (px > maxPx) px = maxPx + (px - maxPx) * 0.3;
+      else if (px < minPx) px = minPx + (px - minPx) * 0.3;
+      homeTabTrack.style.transform = `translateX(${px}px)`;
+    }, { passive: true });
+    homeTabTrack.addEventListener('touchend', (e) => {
+      if (swipeStartX === null) return;
+      const dx = e.changedTouches[0].clientX - swipeStartX;
+      const elapsed = performance.now() - swipeStartTime;
+      const wasHoriz = swipeAxis === 'h';
+      swipeStartX = null;
+      swipeStartY = null;
+      swipeAxis = null;
+      if (!wasHoriz) return;
+      homeTabTrack.style.transition = '';
+      homeTabTrack.style.transform = '';
+      const vw = homeTabTrack.parentElement.offsetWidth;
+      const ratio = dx / vw;
+      const velocity = Math.abs(dx) / Math.max(1, elapsed); // px/ms
+      const FLICK = velocity > 0.4 && Math.abs(dx) > 30;
+      let newIdx = swipeBaseIdx;
+      if ((ratio < -0.25 || (FLICK && dx < 0)) && newIdx < homeTabOrder.length - 1) newIdx++;
+      else if ((ratio > 0.25 || (FLICK && dx > 0)) && newIdx > 0) newIdx--;
+      const newTab = homeTabOrder[newIdx];
+      if (newTab !== homeTabTrack.dataset.active) setActiveTab(newTab);
+    });
+
+    // 00_home — disabled cards (aria-disabled). Tap shows a "준비중" toast +
+    // brief pulse so the surface still feels responsive.
+    document.querySelectorAll('#page-home .home-card[aria-disabled="true"]').forEach((card) => {
+      card.addEventListener('click', () => {
+        showToast('준비 중이에요', { showIcon: false });
+        card.classList.remove('home-card--pulse');
+        void card.offsetWidth;
+        card.classList.add('home-card--pulse');
       });
     });
 

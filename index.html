@@ -1375,6 +1375,18 @@
     /* Snap target for upcoming = -(V + 16). In inner terms that is
        -(50% + 8px) since 50% of inner = V+8. */
     .home-tab-track-inner[data-active="upcoming"] { transform: translateX(calc(-50% - 8px)); }
+    /* Spacing between the carousel and the always-visible "ig 피드 만들기"
+       section that sits below it. Matches the original feel from before
+       the carousel landed (24px between blocks). */
+    .home-tab-track + .home-section { margin-top: 24px; }
+    /* 준비중 탭 placeholder — soft centered message, no card. */
+    .home-section--empty { padding: 80px 20px; text-align: center; }
+    .home-empty {
+      font-family: inherit;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.45);
+      margin: 0;
+    }
 
     /* ─── Disabled-card pulse ────────────────────────────────────────────
        One-shot wiggle to acknowledge a tap on a 준비중 card without
@@ -1416,19 +1428,25 @@
             <span class="home-card-title">매거진느낌 피드</span>
           </button>
         </section>
-        <section class="home-section" data-tab="upcoming">
-          <h2 class="home-section-title">ig 피드 만들기</h2>
-          <button class="home-card is-disabled" type="button" aria-disabled="true" data-name="card_feed_crop">
-            <span class="home-badge is-soon">업데이트 예정</span>
-            <span class="home-card-title">피드자르기</span>
-          </button>
-          <button class="home-card is-disabled" type="button" aria-disabled="true" data-name="card_slide_feed">
-            <span class="home-badge is-soon">업데이트 예정</span>
-            <span class="home-card-title">슬라이드 피드</span>
-          </button>
+        <section class="home-section home-section--empty" data-tab="upcoming">
+          <p class="home-empty">준비 중인 콘텐츠가 없어요</p>
         </section>
       </div>
     </div>
+    <!-- "ig 피드 만들기" sits OUTSIDE the carousel so it stays visible on
+         every tab. The cards inside are aria-disabled (not [disabled]) so
+         press feedback + the "준비 중이에요" toast still fire on tap. -->
+    <section class="home-section">
+      <h2 class="home-section-title">ig 피드 만들기</h2>
+      <button class="home-card is-disabled" type="button" aria-disabled="true" data-name="card_feed_crop">
+        <span class="home-badge is-soon">업데이트 예정</span>
+        <span class="home-card-title">피드자르기</span>
+      </button>
+      <button class="home-card is-disabled" type="button" aria-disabled="true" data-name="card_slide_feed">
+        <span class="home-badge is-soon">업데이트 예정</span>
+        <span class="home-card-title">슬라이드 피드</span>
+      </button>
+    </section>
   </section>
 
   <!-- 02_edit page -->

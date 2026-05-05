@@ -1,0 +1,69 @@
+diff --git a/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibrary.swift b/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibrary.swift
+index 04a6b5e..8aca976 100644
+--- a/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibrary.swift
++++ b/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibrary.swift
+@@ -119,7 +119,7 @@ import Foundation
+             let options = command.arguments[1] as! NSDictionary
+             let thumbnailWidth = options["thumbnailWidth"] as! Int
+             let thumbnailHeight = options["thumbnailHeight"] as! Int
+-            let quality = options["quality"] as! Float
++            let quality = (options["quality"] as! NSNumber).floatValue
+ 
+             service.getThumbnail(photoId, thumbnailWidth: thumbnailWidth, thumbnailHeight: thumbnailHeight, quality: quality) { (imageData) in
+ 
+diff --git a/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibraryService.swift b/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibraryService.swift
+index d06f936..69385a4 100644
+--- a/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibraryService.swift
++++ b/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibraryService.swift
+@@ -214,15 +214,20 @@ final class PhotoLibraryService {
+ 
+             if(mediaType == "image") {
+                 PHImageManager.default().requestImageData(for: asset, options: self.imageRequestOptions) {
+-                    (imageData: Data?, dataUTI: String?, orientation: UIImageOrientation, info: [AnyHashable: Any]?) in
++                    (imageData: Data?, dataUTI: String?, orientation: UIImage.Orientation, info: [AnyHashable: Any]?) in
+ 
+                     if(imageData == nil) {
+                         completion(nil)
+                     }
+                     else {
+-                        let file_url:URL = info!["PHImageFileURLKey"] as! URL
+-//                        let mime_type = self.mimeTypes[file_url.pathExtension.lowercased()]!
+-                        completion(file_url.relativePath)
++                        // Modern iOS (13+) deprecated PHImageFileURLKey — use
++                        // safe optional binding so missing key just yields nil
++                        // (JS treats nativeURL nil as falling back to thumbnail).
++                        if let file_url = info?["PHImageFileURLKey"] as? URL {
++                            completion(file_url.relativePath)
++                        } else {
++                            completion(nil)
++                        }
+                     }
+                 }
+             }
+@@ -356,7 +361,7 @@ final class PhotoLibraryService {
+             let asset = obj as! PHAsset
+ 
+             PHImageManager.default().requestImageData(for: asset, options: self.imageRequestOptions) {
+-                (imageData: Data?, dataUTI: String?, orientation: UIImageOrientation, info: [AnyHashable: Any]?) in
++                (imageData: Data?, dataUTI: String?, orientation: UIImage.Orientation, info: [AnyHashable: Any]?) in
+ 
+                 guard let image = imageData != nil ? UIImage(data: imageData!) : nil else {
+                     completion(nil)
+@@ -388,7 +393,7 @@ final class PhotoLibraryService {
+ 
+             if(mediaType == "image") {
+                 PHImageManager.default().requestImageData(for: asset, options: self.imageRequestOptions) {
+-                    (imageData: Data?, dataUTI: String?, orientation: UIImageOrientation, info: [AnyHashable: Any]?) in
++                    (imageData: Data?, dataUTI: String?, orientation: UIImage.Orientation, info: [AnyHashable: Any]?) in
+ 
+                     if(imageData == nil) {
+                         completion(nil)
+@@ -666,7 +671,7 @@ final class PhotoLibraryService {
+     fileprivate func getDataFromURL(_ url: String) throws -> Data {
+         if url.hasPrefix("data:") {
+ 
+-            guard let match = self.dataURLPattern.firstMatch(in: url, options: NSRegularExpression.MatchingOptions(rawValue: 0), range: NSMakeRange(0, url.characters.count)) else { // TODO: firstMatchInString seems to be slow for unknown reason
++            guard let match = self.dataURLPattern.firstMatch(in: url, options: NSRegularExpression.MatchingOptions(rawValue: 0), range: NSMakeRange(0, url.count)) else { // TODO: firstMatchInString seems to be slow for unknown reason
+                 throw PhotoLibraryError.error(description: "The dataURL could not be parsed")
+             }
+             let dataPos = match.range(at: 0).length

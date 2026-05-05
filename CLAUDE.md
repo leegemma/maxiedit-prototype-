@@ -269,6 +269,8 @@ npm run cap:build:android    # CLI build → android/app/build/outputs/apk/debug
 
 Capacitor config notes: `androidScheme: https`, `backgroundColor: #000` (no white flash on launch), `captureInput: true` for keyboard-aware layout. JDK 17 is the path of least resistance for Gradle; Temurin 21 also works.
 
+**`sync:www` whitelist**: the script in [package.json](package.json) copies `index.html` plus the `images/` folder into `www/`, which `npx cap sync` then mirrors to each platform's public dir. If you add a new top-level asset folder that `index.html` references at runtime (e.g. `fonts/`, a JSON catalogue), extend the script there — the iOS / Android bundle will silently 404 on anything that's not whitelisted, and you'll see broken images / "?" icons on device but not on the local Live Server (which serves from the repo root).
+
 ## iOS build (Capacitor)
 
 Same path constraint as Android — Xcode and CocoaPods choke on iCloud / Korean / spaced paths, so run from `~/dev/maxiedit-prototype-`:

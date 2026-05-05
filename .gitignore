@@ -27,5 +27,9 @@ key.properties
 ios/App/Pods/
 ios/App/App/public/
 ios/App/App/capacitor.config.json
+# Auto-generated bridge for Cordova plugins. cap sync regenerates this
+# from node_modules (with patches re-applied via patch-package), so
+# tracking it would just produce spurious diffs.
+ios/capacitor-cordova-ios-plugins/
 *.xcuserstate
 xcuserdata/

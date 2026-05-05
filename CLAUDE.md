@@ -187,11 +187,19 @@ The track also listens for **touch swipe**: `touch-action: pan-y` on the inner l
 
 **One-shot animation replay**: `.home-card--pulse` is added with a forced reflow (`void el.offsetWidth`) so the same animation can re-fire on a repeat tap. Use this pattern whenever an animation needs to retrigger on a state change rather than play once on mount.
 
-## Picker prototype data
+## Picker auto-load
 
-Entering `02_edit` with `photos[]` empty calls `loadPrototypeRecentPhotos()` ([index.html](index.html)) — this pushes 12 canvas-generated pastel-gradient JPEG dataURLs into `photos[]` so the 최근항목 tab grid feels populated without the user driving the system picker. The `"+"` tile at the end of the grid still opens the real OS file picker for users who want their own media; new picks append to the same `photos[]` array.
+Entering `02_edit` with `photos[]` empty calls `loadRecentPhotos()` ([index.html](index.html)). Two paths, in order:
 
-This is **prototype scaffolding only**. Real device-photo loading (auto-listing the user's photo library on app launch, with permission-aware fallback) is a future task — it needs a Capacitor/Cordova photo-library plugin, `NSPhotoLibraryUsageDescription` in the iOS `Info.plist` (TODO #12 stage 2 already plans this string), and a permission-denied fallback that re-enables the auto-trigger of `<input type="file">`. Don't ship the swatch generator to production; replace it with the real loader before any public launch.
+1. **Device library** via [cordova-plugin-photo-library](https://www.npmjs.com/package/cordova-plugin-photo-library) (bridged into Capacitor on iOS/Android). `loadDeviceRecentPhotos()` requests photo permission, takes the 30 most-recent items via `getLibrary({ itemsInChunk: 50 })`, sorts by `creationDate` desc, and pushes them as `{ url: thumbnailURL, originalUrl: photoURL, type: "image"|"video" }` into `photos[]`.
+2. **Canvas swatches** via `loadPrototypeRecentPhotos()` — only used when the plugin is unavailable (browser / Live Server) or rejects (permission denied, error). Generates 12 pastel-gradient JPEG dataURLs so the picker grid still feels populated.
+
+Required iOS plumbing (already wired):
+
+- `cordova-plugin-photo-library` + its dep `cordova-plugin-file` are in [package.json](package.json) `dependencies`. `npx cap sync ios` bridges them on iOS via the Capacitor-Cordova compat layer.
+- `ios/App/App/Info.plist` carries `NSPhotoLibraryUsageDescription` ("선택한 사진/영상을 편집하기 위해 사진 라이브러리에 접근합니다.") and `NSPhotoLibraryAddUsageDescription` ("편집한 결과물을 사진 앱에 저장합니다."). Without these, iOS terminates the app on first photo access. **If you ever regenerate `ios/` with `cap add ios`, re-apply these keys** — easiest via `plutil -insert NSPhotoLibraryUsageDescription -string "..." ios/App/App/Info.plist`.
+
+The `"+"` tile at the end of the grid still opens the OS file picker so the user can append photos manually; new picks append to the same `photos[]`.
 
 ## Error handling
 

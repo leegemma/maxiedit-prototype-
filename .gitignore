@@ -22,3 +22,10 @@ android/captures/
 *.jks
 keystore.properties
 key.properties
+
+# iOS build outputs
+ios/App/Pods/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+*.xcuserstate
+xcuserdata/

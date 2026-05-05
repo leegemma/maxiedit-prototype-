@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-05-04 | (this commit) | TODO #12 신규 — iOS 앱 출시 계획 (Capacitor iOS). 우선순위 표 행 추가 + 본문 5단계 (스캐폴드 / 권한·메타 / 회귀 / TestFlight·App Store / 운영). 코드 변경 없음, 계획만 |
+| 2026-05-05 | (this commit) | TODO #12 1단계 — Capacitor iOS 스캐폴드 (코드만). package.json `@capacitor/ios` 6.2.1 + cap:add/sync/open/run/build:ios 5개 스크립트, capacitor.config.json `ios` 블록 (`contentInset: always`, `backgroundColor: #000000`, `scrollEnabled: false`), .gitignore 에 iOS 빌드 산출물 5종 (`ios/App/Pods/`, `ios/App/App/public/`, `ios/App/App/capacitor.config.json`, `*.xcuserstate`, `xcuserdata/`), CLAUDE.md "iOS build (Capacitor)" 섹션 신규 + 상단 "Native wrappers" / "Two working clones" 문구 iOS 반영. 실제 `ios/` 폴더 생성은 사용자가 `~/dev/maxiedit-prototype-`에서 `npm install` + `npm run cap:add:ios` 실행 |
+| 2026-05-04 | 5e56c58 | TODO #12 신규 — iOS 앱 출시 계획 (Capacitor iOS). 우선순위 표 행 추가 + 본문 5단계 (스캐폴드 / 권한·메타 / 회귀 / TestFlight·App Store / 운영). 코드 변경 없음, 계획만 |
 | 2026-04-30 | (this commit) | TODO #10 처리 — 좁은 단말 보호 (옵션 B). `:root --frame-width: min(393px, 100vw)`로 .app-frame 폭 가변, .full-image/.result-grid 100%, .preview-viewport frame-width 기반, .preview .full-image 폭 override, .picker-grid 100% 기반, capturePng() 동적 scale로 PNG 출력 항상 1080-wide. 393~412 단말 회귀 0, 320~375 폭에서도 잘림 없음. CLAUDE.md "Narrow device handling" 섹션 신규 |
 | 2026-04-30 | 34aabf1 | TODO #8 매뉴얼 — `docs/qa-checklist.md` 신규 (iOS Safari A1~A4 / Android Chrome B1~B3 / Android APK C1~C4 + 결과 표). 분기 회귀 테스트는 사용자가 매뉴얼대로 직접 수행 |
 | 2026-04-30 | dda72f2 | TODO #7 처리 — `scripts/check-cachebuster.sh` 신규 (권장 ?v=N 출력 + stale 핀 감지 시 exit 1). HISTORY.md / CLAUDE.md / 스크립트 자체 exempt. CLAUDE.md "Live URLs"에 사용법 한 줄 |

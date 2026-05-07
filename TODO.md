@@ -8,7 +8,7 @@
 
 | 우선 | 항목 | 상태 | 주기 | 자동화 |
 |---|---|---|---|---|
-| 🔴 1 | CDN 의존성 SRI + 버전 핀 점검 | ✅ 완료 | 1회 + 분기 | 부분 |
+| 🔴 1 | CDN 의존성 SRI + 버전 핀 점검 | ⚪ 대체됨 (로컬 번들) | — | — |
 | 🔴 2 | Capacitor / Gradle / AGP 보안 패치 | ✅ 완료 | 월 | Dependabot |
 | 🔴 3 | Play Console 타겟 SDK / 데이터 안전 / 개인정보처리방침 | 🟨 코드 측 완료 | 연 (필수) | X |
 | 🟡 4 | 에러 모니터링 도입 (window.onerror → Sentry) | 🟨 1단계 완료 | 1회 | - |
@@ -26,7 +26,7 @@
 
 ## 🔴 1. CDN 의존성 SRI + 버전 핀 점검
 
-- [x] **상태**: 완료 (2026-04-30) — Sortable.js / html2canvas SRI sha384 적용
+- [x] **상태**: 대체됨 (2026-05-07) — Sortable.js / html2canvas를 `lib/`에 로컬 번들로 전환. SRI 검증은 SSL 인터셉션 환경(Somansa 등)에서 스크립트 자체 로드를 막아 다운로드 실패 유발 → 로컬 번들이 더 강력한 방어선이라 SRI 자리를 대체. 자세한 내용은 CLAUDE.md "External dependencies" 참고.
 
 **왜**: index.html이 외부 CDN에 100% 의존. SRI 없이 로드 중 → 변조·캐시 오염 방어 0.
 

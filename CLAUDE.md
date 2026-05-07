@@ -11,13 +11,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Designed at **393×852** (iPhone portrait); on-screen frame is `min(393px, 100vw) × 100dvh` to safely handle 320~440px devices. Tablet/desktop responsive is option C / out of scope here. UI text is Korean.
 
-External dependencies (loaded via CDN, no local install):
-- Google Fonts — Inter, Noto Sans KR (used by buttons/UI), Nanum Myeongjo (caption serif inside `full_image`)
-- Sortable.js 1.15.2 — long-press drag-reorder for selected thumbnails
-- html2canvas 1.4.1 — full result PNG export
-- ffmpeg.wasm 0.12.10 (lazy) — MP4 transcode fallback when MediaRecorder doesn't emit MP4
+External dependencies:
 
-Eagerly-loaded `<script>` tags pin a `sha384` SRI hash plus `crossorigin="anonymous"` so a tampered or stale CDN response is rejected by the browser. Regenerate the hash whenever the version bumps (e.g. `curl --ssl-no-revoke -sS <url> | openssl dgst -sha384 -binary | openssl base64 -A`). ffmpeg.wasm stays unhashed because it loads its own sub-resources at runtime.
+- **Bundled locally** under `lib/` (committed, copied to `www/lib/` by `sync:www`):
+  - Sortable.js 1.15.2 — long-press drag-reorder for selected thumbnails
+  - html2canvas 1.4.1 — full result PNG export
+- **CDN, lazy** — never blocks the app:
+  - ffmpeg.wasm 0.12.10 — MP4 transcode fallback when MediaRecorder doesn't emit MP4
+- **CDN, blocking but tolerated** (no JS execution from these):
+  - Google Fonts — Inter, Noto Sans KR (UI), Nanum Myeongjo (caption serif inside `full_image`)
+
+Sortable.js and html2canvas previously loaded from jsDelivr with SRI hashes (TODO #1). Corporate SSL-interception products (e.g. Somansa) replace the CDN cert mid-flight, breaking the SRI integrity check and leaving the WebView with no `html2canvas` symbol — the download flow then dies with "이미지 생성에 실패했습니다." Local bundling makes the app immune to that, and to flight-mode/offline cold starts.
+
+To bump a bundled lib: `curl --ssl-no-revoke -sS <jsdelivr-url> -o lib/<file>` then commit. No SRI step needed.
 
 Full attribution and license texts: [docs/licenses.html](docs/licenses.html) (deployed at https://leegemma.github.io/maxiedit-prototype/docs/licenses.html). Add a row there whenever a new dependency is introduced.
 

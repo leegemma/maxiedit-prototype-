@@ -1620,13 +1620,12 @@
     });
 
     // ─── AdMob (TODO #13) ─────────────────────────────────────────────
-    // Android = production AdMob ad-unit (Rewarded). iOS still on the
-    // Google sample test ID until the iOS AdMob app is registered.
-    // `isTesting: true` below keeps your test devices off real billing
-    // even on the production ID; flip it to false when shipping to
-    // Play Store / App Store.
-    const AD_REWARDED_TEST_IOS = 'ca-app-pub-3940256099942544/1712485313';        // TODO: swap to production iOS Rewarded ID
-    const AD_REWARDED_TEST_ANDROID = 'ca-app-pub-1905722384577365/2431743322';    // production Android Rewarded ID
+    // Both platforms on production AdMob ad-unit IDs (Rewarded).
+    // `isTesting: true` below keeps test devices off real billing even
+    // on production IDs; flip it to false when shipping to Play Store /
+    // App Store.
+    const AD_REWARDED_IOS = 'ca-app-pub-1905722384577365/6534639867';
+    const AD_REWARDED_ANDROID = 'ca-app-pub-1905722384577365/2431743322';
     const FREE_DOWNLOADS = 1; // first save bypasses the ad gate
     const adsApi = () => {
       if (!window.Capacitor) return null;
@@ -1658,7 +1657,7 @@
       const AdMob = adsApi();
       if (!AdMob) return true; // browser/web — no ad to show, treat as reward
       const platform = window.Capacitor.getPlatform();
-      const adId = platform === 'ios' ? AD_REWARDED_TEST_IOS : AD_REWARDED_TEST_ANDROID;
+      const adId = platform === 'ios' ? AD_REWARDED_IOS : AD_REWARDED_ANDROID;
       try {
         await AdMob.prepareRewardVideoAd({ adId, isTesting: true });
         const reward = await AdMob.showRewardVideoAd();

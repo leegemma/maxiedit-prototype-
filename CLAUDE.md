@@ -225,10 +225,11 @@ The app monetizes via Google AdMob through the [`@capacitor-community/admob`](ht
 
 App IDs and ad-unit IDs:
 
-- Currently **Google's official test IDs** (Google bills/earns nothing). Production swap points:
-  - `android/app/src/main/AndroidManifest.xml` `com.google.android.gms.ads.APPLICATION_ID` meta-data
-  - `ios/App/App/Info.plist` `GADApplicationIdentifier`
-  - `AD_REWARDED_TEST_IOS` / `AD_REWARDED_TEST_ANDROID` constants at the top of `index.html`'s main `<script>`
+- Both platforms now point at **production AdMob IDs** for MaxiEdit (publisher `ca-app-pub-1905722384577365`). `showRewardedAd` still calls the plugin with `isTesting: true` so dev devices stay off real billing — flip to `false` (or env-gate it) at Play Store / App Store release.
+- ID locations:
+  - `android/app/src/main/AndroidManifest.xml` `com.google.android.gms.ads.APPLICATION_ID` meta-data → Android App ID
+  - `ios/App/App/Info.plist` `GADApplicationIdentifier` → iOS App ID
+  - `AD_REWARDED_IOS` / `AD_REWARDED_ANDROID` constants at the top of `index.html`'s main `<script>` → Rewarded ad-unit IDs
 - ATT prompt (`NSUserTrackingUsageDescription`) is in Info.plist; AdMob initialize is called with `requestTrackingAuthorization: true` so iOS 14.5+ users see the system dialog before the first ad request.
 
 If the ad type ever changes (Interstitial, Banner, Rewarded Interstitial), keep the `showRewardedAd` funnel at the gate and swap the underlying API call there — the `incrementDownloadCount` and `askConfirm` glue stays put.

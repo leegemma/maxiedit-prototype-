@@ -26,10 +26,10 @@
 	<string>편집한 결과물을 사진 앱에 저장합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>선택한 사진/영상을 편집하기 위해 사진 라이브러리에 접근합니다.</string>
-	<!-- AdMob (TODO #13). Currently using Google's iOS sample App ID; swap
-	     for the production ID once issued. Ad-unit IDs live in index.html. -->
+	<!-- AdMob (TODO #13) — production iOS App ID for MaxiEdit (issued by
+	     AdMob console 2026-05-07). Ad-unit IDs live in index.html. -->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-1905722384577365~1537308520</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>광고를 더 적합하게 보여드리기 위해 사용됩니다. 거부해도 앱 사용에는 문제가 없습니다.</string>
 	<key>SKAdNetworkItems</key>

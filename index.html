@@ -1620,11 +1620,13 @@
     });
 
     // ─── AdMob (TODO #13) ─────────────────────────────────────────────
-    // Currently using Google's official test ad-unit IDs. Swap REAL_*
-    // when the production AdMob console issues them; the test IDs above
-    // serve real (test) ads on device but never bill or earn revenue.
-    const AD_REWARDED_TEST_IOS = 'ca-app-pub-3940256099942544/1712485313';
-    const AD_REWARDED_TEST_ANDROID = 'ca-app-pub-3940256099942544/5224354917';
+    // Android = production AdMob ad-unit (Rewarded). iOS still on the
+    // Google sample test ID until the iOS AdMob app is registered.
+    // `isTesting: true` below keeps your test devices off real billing
+    // even on the production ID; flip it to false when shipping to
+    // Play Store / App Store.
+    const AD_REWARDED_TEST_IOS = 'ca-app-pub-3940256099942544/1712485313';        // TODO: swap to production iOS Rewarded ID
+    const AD_REWARDED_TEST_ANDROID = 'ca-app-pub-1905722384577365/2431743322';    // production Android Rewarded ID
     const FREE_DOWNLOADS = 1; // first save bypasses the ad gate
     const adsApi = () => {
       if (!window.Capacitor) return null;

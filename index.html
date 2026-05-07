@@ -1619,6 +1619,59 @@
       console.error('[unhandled rejection]', event.reason);
     });
 
+    // ─── AdMob (TODO #13) ─────────────────────────────────────────────
+    // Currently using Google's official test ad-unit IDs. Swap REAL_*
+    // when the production AdMob console issues them; the test IDs above
+    // serve real (test) ads on device but never bill or earn revenue.
+    const AD_REWARDED_TEST_IOS = 'ca-app-pub-3940256099942544/1712485313';
+    const AD_REWARDED_TEST_ANDROID = 'ca-app-pub-3940256099942544/5224354917';
+    const FREE_DOWNLOADS = 1; // first save bypasses the ad gate
+    const adsApi = () => {
+      if (!window.Capacitor) return null;
+      if (!window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return null;
+      return window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob;
+    };
+    const initAds = async () => {
+      const AdMob = adsApi();
+      if (!AdMob) return;
+      try {
+        await AdMob.initialize({
+          requestTrackingAuthorization: true,
+          initializeForTesting: true,
+        });
+      } catch (err) {
+        console.warn('[ads] initialize failed', err);
+      }
+    };
+    initAds();
+
+    let downloadCount = 0;
+    try { downloadCount = parseInt(localStorage.getItem('mxe_dl_count') || '0', 10) || 0; } catch {}
+    const incrementDownloadCount = () => {
+      downloadCount += 1;
+      try { localStorage.setItem('mxe_dl_count', String(downloadCount)); } catch {}
+    };
+
+    const showRewardedAd = async () => {
+      const AdMob = adsApi();
+      if (!AdMob) return true; // browser/web — no ad to show, treat as reward
+      const platform = window.Capacitor.getPlatform();
+      const adId = platform === 'ios' ? AD_REWARDED_TEST_IOS : AD_REWARDED_TEST_ANDROID;
+      try {
+        await AdMob.prepareRewardVideoAd({ adId, isTesting: true });
+        const reward = await AdMob.showRewardVideoAd();
+        // showRewardVideoAd resolves with the reward object on completion;
+        // a missing/zero amount means the user dismissed early.
+        return !!(reward && (reward.amount > 0 || reward.type));
+      } catch (err) {
+        console.warn('[ads] rewarded failed', err);
+        return false;
+      }
+    };
+
+    const AD_GATE_PROMPT =
+      '잠깐만요!🖐️\n1회 광고시청 후 바로 다운로드가 시작되요!\n보고나면 바로 준비해드릴게요...👉👈\n정말 감사합니다!🥺';
+
     const MAX_SELECT = 9;
     const SLOT_COLORS = [
       '#ffefb7', '#ffdfdf', '#d9d9d9',
@@ -2474,6 +2527,7 @@
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: 'MaxiEdit' });
+          incrementDownloadCount();
           return true;
         } catch (err) {
           if (err && err.name === 'AbortError') return false; // user cancelled
@@ -2489,6 +2543,7 @@
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
+      incrementDownloadCount();
       return true;
     };
 
@@ -2812,7 +2867,25 @@
       if (selected.length === 0) return;
       showModal(downloadModal);
     };
-    btnDownload.addEventListener('click', openDownloadModal);
+    // TODO #13 — first download is free; from the second on, gate the
+    // format modal behind a Rewarded ad. The popup uses askConfirm so
+    // the wording survives askConfirm's white-space: pre-line styling.
+    const openDownloadModalGated = async () => {
+      if (selected.length === 0) return;
+      if (downloadCount < FREE_DOWNLOADS) {
+        openDownloadModal();
+        return;
+      }
+      const ok = await askConfirm(AD_GATE_PROMPT);
+      if (!ok) return;
+      const adWatched = await showRewardedAd();
+      if (!adWatched) {
+        showToast('광고를 끝까지 봐야 다운로드가 시작돼요.', { showIcon: false });
+        return;
+      }
+      openDownloadModal();
+    };
+    btnDownload.addEventListener('click', openDownloadModalGated);
     // PNG: use full-page PNG when on 10_result, single-slide PNG when on 12_single
     btnDownloadPng.addEventListener('click', () => {
       hideModal(downloadModal);
@@ -3284,7 +3357,7 @@
     };
 
     // Single view download button → use the same chooser modal (context-aware).
-    btnSingleDownload.addEventListener('click', openDownloadModal);
+    btnSingleDownload.addEventListener('click', openDownloadModalGated);
 
     // Swipe on 10_result → jump to single view (slot 0).
     const resultSection = document.querySelector('#page-result .result');

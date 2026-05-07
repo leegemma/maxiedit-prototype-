@@ -20,6 +20,7 @@
 | 🔴 10 | 좁은 단말 보호 (반응형 옵션 B) | ✅ 완료 | 1회 | X |
 | 🟡 11 | 진짜 반응형 (옵션 C) | ⏳ 미완료 | 1회 + Figma 동반 | X |
 | 🟡 12 | iOS 앱 출시 (Capacitor iOS) | ⏳ 미완료 | 1회 + 연 1회 Xcode/SDK 점검 | X |
+| 🟡 13 | AdMob Rewarded 광고 연동 | 🟨 코드 완료 (테스트 ID) | 1회 + production ID 교체 | X |
 
 ---
 
@@ -569,6 +570,24 @@ TODO #12 2단계 — iOS 권한 문구 + 앱 아이콘 + 런치 스크린.
 - 매 push마다 안드로이드와 동일하게 `npm run cap:sync ios` + `?v=N` 증분
 - 연 1회 Xcode 메이저 업데이트 시점에 Capacitor iOS 의존성 점검 (안드로이드 SDK 강상향 정책과 별도)
 - iOS 메이저 버전 출시(매년 9월) 후 1주 안에 실기 회귀 (docs/qa-checklist.md에 iOS-OS-bump 행 추가)
+
+---
+
+## 🟡 13. AdMob Rewarded 광고 연동
+
+- [x] **코드 완료** (2026-05-07, 테스트 ID) — `@capacitor-community/admob` v6.2.0 설치. AdMob 초기화 + ATT 프롬프트, Rewarded 광고 게이트 (다운로드 첫 회 면제, 2회+부터 popup → 확인 → 광고 → 보상으로 다운로드). `saveBlob` 안에서 `mxe_dl_count` 증가. AndroidManifest.xml `APPLICATION_ID`, Info.plist `GADApplicationIdentifier` + ATT description + SKAdNetworkItems 38개. `docs/privacy.html` 광고 데이터 수집 명시로 개정.
+- [ ] **AdMob 계정 + Production ID 교체 남음** — 사용자 작업.
+  1. https://admob.google.com 가입 → 앱 등록 (iOS/Android 각각, "Not yet published" 선택 OK)
+  2. Rewarded ad unit 생성 → ID 받기 (각 OS별)
+  3. `index.html` 상단의 `AD_REWARDED_TEST_IOS` / `AD_REWARDED_TEST_ANDROID` 두 상수와 `AndroidManifest.xml` `APPLICATION_ID` / `Info.plist` `GADApplicationIdentifier` 4곳을 production 값으로 교체.
+  4. iOS는 본인 폰까지만 테스트, Android는 Play Console 출시 시 실제 매출 발생.
+
+**왜**: 무료 운영을 위한 매출 유입. Rewarded는 일반 Interstitial보다 평균 CPM 2~3배.
+
+**완료 기준** (production):
+- 실기에서 광고 한 번 노출 후 다운로드 정상 진행
+- AdMob 대시보드에 노출/클릭 카운트 도착
+- privacy.html이 광고 수집을 명시
 
 ---
 

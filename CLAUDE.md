@@ -214,6 +214,27 @@ Both currently just `console.error` with structured context. This is **stage 1**
 
 Don't swallow errors in app code by adding broad `try/catch` blocks just to silence them — let them bubble to these handlers so they're visible.
 
+## Ads (AdMob)
+
+The app monetizes via Google AdMob through the [`@capacitor-community/admob`](https://github.com/capacitor-community/admob) plugin (v6.x). Currently wired to **Rewarded Video** ads gated to the download flow:
+
+- **First save is free.** The download count lives in `localStorage` under `mxe_dl_count` and bypasses the ad on the first run.
+- **Second save onward** the download button calls `openDownloadModalGated`. It fires `askConfirm(AD_GATE_PROMPT)` (the popup the user wrote — "잠깐만요!🖐️…"). On 확인, `showRewardedAd()` calls `prepareRewardVideoAd` + `showRewardVideoAd`. Reward earned → format modal opens; dismissed without reward → toast "광고를 끝까지 봐야 다운로드가 시작돼요." and no download.
+- **Browser / non-native** runs return `true` from `showRewardedAd` so dev-on-laptop never blocks the download. Native detection is `window.Capacitor.isNativePlatform()`.
+- **Counter increments inside `saveBlob`** so any successful save (PNG, MP4, native share, anchor download) bumps the count exactly once.
+
+App IDs and ad-unit IDs:
+
+- Currently **Google's official test IDs** (Google bills/earns nothing). Production swap points:
+  - `android/app/src/main/AndroidManifest.xml` `com.google.android.gms.ads.APPLICATION_ID` meta-data
+  - `ios/App/App/Info.plist` `GADApplicationIdentifier`
+  - `AD_REWARDED_TEST_IOS` / `AD_REWARDED_TEST_ANDROID` constants at the top of `index.html`'s main `<script>`
+- ATT prompt (`NSUserTrackingUsageDescription`) is in Info.plist; AdMob initialize is called with `requestTrackingAuthorization: true` so iOS 14.5+ users see the system dialog before the first ad request.
+
+If the ad type ever changes (Interstitial, Banner, Rewarded Interstitial), keep the `showRewardedAd` funnel at the gate and swap the underlying API call there — the `incrementDownloadCount` and `askConfirm` glue stays put.
+
+Privacy policy [docs/privacy.html](docs/privacy.html) declares the data flow (IDFA/AAID, IP, device info shared with AdMob; photos/videos stay on-device).
+
 ## Documentation policy
 
 Every commit that changes code must also update one of:

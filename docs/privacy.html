@@ -102,16 +102,40 @@
     <h2 class="section-title">요약 / Summary</h2>
 
     <div class="block">
-      <p><strong>MaxiEdit는 어떤 개인정보도 수집·저장·전송하지 않습니다.</strong> 사용자가 선택한 사진과 영상은 디바이스 내부에서만 처리되며, 외부 서버로 전송되지 않습니다.</p>
-      <p class="en"><strong>MaxiEdit does not collect, store, or transmit any personal data.</strong> Photos and videos you select are processed entirely on your device and are never uploaded to any server.</p>
+      <p>사용자가 선택한 사진·영상은 디바이스 내부에서만 처리되며 어떤 서버에도 업로드되지 않습니다. <strong>다만 무료 운영을 위해 Google AdMob 광고 SDK를 사용하며, AdMob이 광고 노출·맞춤 광고 목적으로 광고 ID(IDFA/AAID), IP 주소, 디바이스 정보 등을 수집·전송합니다.</strong></p>
+      <p class="en">Photos and videos you select are processed entirely on your device and are never uploaded to any server. <strong>However, the app is funded by ads served via Google AdMob, which collects and shares the advertising identifier (IDFA/AAID), IP address, and basic device data for ad delivery and personalization.</strong></p>
     </div>
 
-    <h2 class="section-title">수집하는 데이터 / Data we collect</h2>
+    <h2 class="section-title">수집·전송되는 데이터 / Data collected &amp; shared</h2>
 
     <div class="block">
-      <div class="block-title">없음 / None</div>
-      <p>이 앱은 사용자의 개인정보를 수집하지 않으며, 분석(analytics)·광고·크래시 리포트 어떤 형태의 텔레메트리도 작동하지 않습니다.</p>
-      <p class="en">This app collects no personal information. It does not run analytics, advertising, or any form of telemetry, including crash reports.</p>
+      <div class="block-title">사진·영상 콘텐츠 / Your photos &amp; videos</div>
+      <p>수집·전송되지 않습니다. 디바이스 메모리에서만 처리되고 앱 종료 시 사라집니다.</p>
+      <p class="en">Not collected or transmitted. Processed in device memory only and discarded when the app exits.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-title">광고 식별자 / Advertising identifier (IDFA / AAID)</div>
+      <p>Google AdMob이 광고 노출·빈도 캡·맞춤 광고를 위해 사용합니다. iOS 14.5+에서는 ATT(앱 추적 투명성) 권한 요청 후에만 추적 목적으로 사용되며, 사용자가 거부하면 비맞춤 광고만 노출됩니다.</p>
+      <p class="en">Used by Google AdMob for ad delivery, frequency capping, and personalization. On iOS 14.5+, used for tracking only after the user grants App Tracking Transparency permission; if denied, only non-personalized ads are shown.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-title">IP 주소·기기 정보 / IP address &amp; device info</div>
+      <p>광고 요청 시 자동으로 AdMob 서버로 전송됩니다 (대략적 위치 추정·기기 호환성·사기 방지 목적). MaxiEdit 자체는 별도 저장하지 않습니다.</p>
+      <p class="en">Automatically sent to AdMob servers with each ad request (for approximate geolocation, device compatibility, and fraud prevention). Not stored separately by MaxiEdit itself.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-title">다운로드 횟수 / Download count</div>
+      <p>광고 게이트 동작을 위해 디바이스 내 `localStorage`에 누적 다운로드 횟수만 저장합니다. 외부로 전송되지 않으며, 앱 데이터 삭제 시 같이 삭제됩니다.</p>
+      <p class="en">A cumulative download counter is stored in device-local `localStorage` so the ad gate can function. It is not transmitted anywhere and clears when app data is deleted.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-title">분석·크래시 리포트 / Analytics &amp; crash reports</div>
+      <p>현재 미사용. 향후 도입 시 본 방침을 갱신합니다.</p>
+      <p class="en">None currently. If introduced later, this policy will be updated.</p>
     </div>
 
     <h2 class="section-title">사용하는 권한 / Permissions used</h2>
@@ -138,13 +162,14 @@
     <h2 class="section-title">외부 자원 / Third-party resources</h2>
 
     <div class="block">
-      <p>앱 UI를 표시하기 위해 다음 외부 자원을 처음 실행 시 다운로드합니다. 이 요청들은 일반적인 정적 자원 로드이며 사용자 식별 정보를 포함하지 않습니다.</p>
+      <p>앱 UI를 표시하기 위해 다음 외부 자원을 처음 실행 시 다운로드합니다 (광고 외에는 사용자 식별 정보 포함하지 않음).</p>
       <ul style="font-size: 12px; color: rgba(255,255,255,0.6); padding-left: 18px; margin-top: 4px;">
         <li>Google Fonts (Inter, Noto Sans KR, Nanum Myeongjo)</li>
         <li>jsDelivr CDN — Sortable.js, html2canvas, ffmpeg.wasm (지연 로드)</li>
+        <li><strong>Google AdMob</strong> — 광고 노출 및 IDFA/AAID·IP·기기 정보 수집·공유 (위 "수집·전송되는 데이터" 참고)</li>
       </ul>
-      <p class="en" style="margin-top: 8px;">The app loads the following static assets at launch: Google Fonts and the jsDelivr CDN entries above. These are normal static-resource fetches and do not include any user identifier.</p>
-      <p style="margin-top: 8px;">전체 라이선스: <a class="link" href="licenses.html">licenses.html</a></p>
+      <p class="en" style="margin-top: 8px;">Static assets above are fetched without identifiers; AdMob fetches collect and share the data described in the "Data collected &amp; shared" section.</p>
+      <p style="margin-top: 8px;">전체 라이선스: <a class="link" href="licenses.html">licenses.html</a> · AdMob 정책: <a class="link" href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">Google Ads policy</a></p>
     </div>
 
     <h2 class="section-title">아동 데이터 / Children's data</h2>

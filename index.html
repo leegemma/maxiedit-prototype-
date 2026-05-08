@@ -172,8 +172,8 @@
     /* When two section blocks live inside one .home-section (home tab has the
        "새로 나왔어요" hero AND the "ig 피드 만들기" cards stacked), the second
        title needs explicit top spacing so it visually separates from the hero
-       card. Without this it sits flush against the previous card. */
-    .home-section-title--inline { margin-top: 24px; }
+       card. */
+    .home-section-title--inline { margin-top: 16px; }
     .home-section-title {
       font-family: inherit;
       font-size: 17px;
@@ -211,12 +211,14 @@
       display: block;
       z-index: 0;
     }
-    /* Convention: every thumbnail image in a card sits under a 40% black scrim
-       so foreground text and badges stay legible regardless of the photo. */
+    /* Thumbnail scrim: a 25% black overlay so foreground text and badges
+       stay legible without flattening the photo's color too much. (The
+       project convention used to be 40%, intentionally relaxed for the
+       home banner's softer mood.) */
     .home-card-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.4);
+      background: rgba(0, 0, 0, 0.25);
       pointer-events: none;
       z-index: 1;
     }
@@ -229,6 +231,11 @@
     .home-card.is-featured {
       background: #8D9B4D;
       color: #fff;
+      /* Hero banner: title + badge anchored to the bottom (17px from edge)
+         instead of vertically centered. Other home cards (is-disabled)
+         keep the default centered layout. */
+      justify-content: flex-end;
+      padding-bottom: 17px;
     }
     .home-card.is-featured:active { opacity: 0.9; }
     .home-card.is-disabled {

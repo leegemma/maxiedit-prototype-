@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-05-07 | (this commit) | picker-grid 셀이 iOS Safari에서 정사각형이 아니던 문제 수정. `grid-auto-rows: calc((100% - 8px) / 3)` 의 `100%` 가 CSS spec 상 컨테이너 **height** 를 가리켜서(width 아님) iOS Safari에서 비정사각 발생. `var(--frame-width)` 직접 참조로 변경. CLAUDE.md 두 곳에 함정 명시 |
+| 2026-05-07 | (this commit) | 홈 배너 폴리싱 — (1) "새로 나왔어요" ↔ "ig 피드 만들기" 섹션 간격 24→16px, (2) 매거진 배너의 타이틀·뉴 배지를 중앙 → 하단 17px 위로 (`is-featured`에 `justify-content: flex-end` + `padding-bottom: 17px`), (3) 배너 scrim 40% → 25% 로 연하게. CLAUDE.md "Thumbnail scrim" 규칙을 surface-별 opacity 가변으로 명시 |
+| 2026-05-07 | c7c1715 | picker-grid 셀이 iOS Safari에서 정사각형이 아니던 문제 수정. `grid-auto-rows: calc((100% - 8px) / 3)` 의 `100%` 가 CSS spec 상 컨테이너 **height** 를 가리켜서(width 아님) iOS Safari에서 비정사각 발생. `var(--frame-width)` 직접 참조로 변경. CLAUDE.md 두 곳에 함정 명시 |
 | 2026-05-07 | 7abbcd7 | `saveBlob` Path 1 — `cordova.plugins.photoLibrary.saveImage/saveVideo`가 blob URL 미지원이라 사일런트 실패하던 문제 수정. Blob을 `FileReader.readAsDataURL` 로 data URL 변환 후 플러그인에 전달. 이제 'MaxiEdit' 앨범에 정상 생성. CLAUDE.md "Download flow"에 dataURL 변환 이유 한 줄 추가 |
 | 2026-05-07 | 7d5e1ac | (1) 홈 탭에도 ig 피드 만들기 두 카드 다시 노출 (홈 = 매거진 + ig 카드, 준비중 = ig 카드만 — 두 탭 모두 표시되도록 동일 카드를 두 섹션에 중복 배치). (2) `saveBlob` 1순위 경로 신설 — `cordova.plugins.photoLibrary.saveImage / saveVideo` 로 Android 갤러리·iOS Photos에 'MaxiEdit' 앨범 직저장. 실패 시 navigator.share → anchor 순으로 폴백. CLAUDE.md "Download flow" 3경로 명시 |
 | 2026-05-07 | 73537a0 | 홈 화면 정리 — (1) 매거진 피드 카드 이미지 `width:100%/height:auto` → `object-fit: contain` 으로 전환해 잘리던 톱·바텀 노출, (2) 피드자르기·슬라이드피드 카드를 카루셀 밖에서 → 준비중 탭 안으로 이동, (3) "준비중인 콘텐츠가 없어요" 빈 placeholder 섹션·CSS 제거 (이제 준비중 탭에 실제 카드 2개 존재) |

@@ -53,7 +53,7 @@ Concretely:
 - `:root` exposes `--frame-width: min(393px, 100vw)` so any layer that needs the unscaled frame width can read it.
 - `.app-frame { width: var(--frame-width) }`.
 - `.full-image { width: 100% }` (formerly `393px`); `.result-grid { width: 100% }`; `.preview-viewport { width: calc(var(--frame-width) * var(--preview-scale)) }`; `.preview .full-image { width: var(--frame-width) }` (override so `transform: scale` lands on viewport size).
-- `.picker-grid { grid-auto-rows: calc((100% - 8px) / 3) }` so picker cells stay square at any frame width.
+- `.picker-grid { grid-auto-rows: calc((var(--frame-width) - 8px) / 3) }` so picker cells stay square at any frame width. (Don't switch to `100%` — in `grid-auto-rows` percentages reference container *height*, which iOS Safari respects strictly and produces non-square cells.)
 - `capturePng()` derives `scale = TARGET_WIDTH / fullImage.offsetWidth` instead of the old hardcoded `1080/393`, so PNG output is always `TARGET_WIDTH` wide regardless of device.
 
 Tablets and wider screens still see a centered 393-wide frame — that's the option C decision point. Don't sneak desktop responsive in here.
@@ -83,7 +83,7 @@ Inside the edit page (top → bottom):
 
 1. **Header** (`.edit-header`, `z:4`, `top: 12`) — close-X icon button (`btn-edit-close`) and reset (`btn-reset-top`, RotateCcw + 초기화 label)
 2. **`preview`** (`z:1`, `top: 69`) — scaled-down `full_image` mirror at `--preview-scale: 0.4` via `transform: scale()` on a 393×522 inner inside a clipping viewport
-3. **`bottom_layer_imageList`** (`z:2`, `top: calc(69px + 522px*0.4)` ≈ 277.8) — category tabs + picker grid. Picker grid uses `grid-template-columns: repeat(3, 1fr)` + `grid-auto-rows: calc((393px - 8px) / 3)` for square cells (don't rely on `aspect-ratio` alone; flaky in grid). Empty state (`.picker-empty`) is `position: absolute; inset: 0` overlaying the grid so it never participates in row sizing.
+3. **`bottom_layer_imageList`** (`z:2`, `top: calc(69px + 522px*0.4)` ≈ 277.8) — category tabs + picker grid. Picker grid uses `grid-template-columns: repeat(3, 1fr)` + `grid-auto-rows: calc((var(--frame-width) - 8px) / 3)` for square cells. Don't rely on `aspect-ratio` alone (flaky in grid) and don't use `100%` in `grid-auto-rows` (resolves to container height per CSS spec — produces non-square cells on iOS Safari). Empty state (`.picker-empty`) is `position: absolute; inset: 0` overlaying the grid so it never participates in row sizing.
 4. **`bottom_layer_select`** (`z:3`, `bottom: 0`) — sticky bottom bar. Exactly 4 thumbs visible (`flex: 0 0 248px` = 4×56 + 3×8 gap); 5th+ scroll horizontally with snap. Long-press reorders via Sortable.js (`delay: 300`). Slides up on entry via `bls-slide-up` keyframe with `cubic-bezier(0.22, 0.9, 0.3, 1)` for an iOS-like inertial feel; `goTo('edit')` toggles `.is-entering` with a forced reflow so it replays on every re-entry.
 
 ### State model

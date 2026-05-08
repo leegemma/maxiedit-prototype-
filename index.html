@@ -167,13 +167,13 @@
       background: #fff;
       color: #111;
     }
-    .home-section { margin: 0 0 24px; }
+    /* Section spacing — consistent 32px between any home block (wider than the
+       earlier 24px / 16px iterations; v=84 had 24px and felt cramped). Applies
+       to both real section breaks AND the inline title that appears inside a
+       single section (home tab combines hero + ig 피드 만들기 sub-block). */
+    .home-section { margin: 0 0 32px; }
     .home-section + .home-section { margin-top: 4px; }
-    /* When two section blocks live inside one .home-section (home tab has the
-       "새로 나왔어요" hero AND the "ig 피드 만들기" cards stacked), the second
-       title needs explicit top spacing so it visually separates from the hero
-       card. */
-    .home-section-title--inline { margin-top: 16px; }
+    .home-section-title--inline { margin-top: 32px; }
     .home-section-title {
       font-family: inherit;
       font-size: 17px;
@@ -211,14 +211,14 @@
       display: block;
       z-index: 0;
     }
-    /* Thumbnail scrim: a 25% black overlay so foreground text and badges
-       stay legible without flattening the photo's color too much. (The
-       project convention used to be 40%, intentionally relaxed for the
-       home banner's softer mood.) */
+    /* Thumbnail scrim: a 15% black overlay — just enough darkening to
+       keep white text legible without dimming the photo's color. The
+       earlier 25% / 40% values still flattened the magazine thumbnail
+       too aggressively. */
     .home-card-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.25);
+      background: rgba(0, 0, 0, 0.15);
       pointer-events: none;
       z-index: 1;
     }

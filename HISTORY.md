@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-05-08 | (this commit) | `.home-card-title` 에 `text-shadow: 0 1px 4px rgba(0,0,0,0.35)` 추가. 15% scrim만으론 high-key 사진 위에서 흰 타이틀 읽기 어려운 케이스 보완. 모든 배너(매거진/피드자르기/슬라이드피드) 공통 적용 |
+| 2026-05-08 | (this commit) | `images/thum_feed_image02.png` 재업로드 (299 KB, 직전 304 KB 버전 대체). 매거진 피드 카드에 적용된 동일 파일을 다듬어 교체 |
+| 2026-05-08 | (prev) | `.home-card-title` 에 `text-shadow: 0 1px 4px rgba(0,0,0,0.35)` 추가. 15% scrim만으론 high-key 사진 위에서 흰 타이틀 읽기 어려운 케이스 보완. 모든 배너(매거진/피드자르기/슬라이드피드) 공통 적용 |
 | 2026-05-08 | f12c975 | `.home-badge` 패딩 `1px 6px` → `0 5px` 로 추가 컴팩트화. 칩 높이는 font-size 10 × line-height 1.4 = 14px 그대로 유지, 좌우만 더 타이트하게. |
 | 2026-05-08 | 9ec2a5b | 매거진느낌 피드 카드 썸네일을 `thum_feed_image01.png` → `thum_feed_image02.png` 로 교체. (이전 커밋에서 새 이미지 자산만 선반영했고 이번 커밋이 실제 src 변경) |
 | 2026-05-08 | f9b54a0 | `images/thum_feed_image02.png` 추가 (304 KB). 다른 머신에서 피드 카드 썸네일 교체 작업용 자산 선반영 |

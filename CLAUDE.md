@@ -102,7 +102,7 @@ The 3×3 color-slot grid + textarea legend is rendered identically in two places
 - `10_result` — full 393×522 size, positioned absolute at `top: 69`
 - `02_edit` preview — same DOM structure inside `.preview-viewport`, scaled via CSS transform
 
-`buildResultStyleGrid(target, onCellClick?)` populates both grids; `renderGridSlots(gridEl, { animateVideos })` syncs their colors/opacity to `selected[]`. The result grid passes `animateVideos: true` so video slots get a live `<video autoplay loop muted playsinline>` element capped at `VIDEO_CLIP_SECONDS` (currently 2). When editing grid visuals, change in one place.
+`buildResultStyleGrid(target, onCellClick?)` populates both grids; `renderGridSlots(gridEl, { animateVideos })` syncs their colors/opacity to `selected[]`. The result grid passes `animateVideos: true` so video slots get a live `<video autoplay loop muted playsinline>` element capped at `VIDEO_CLIP_SECONDS` (currently 4). When editing grid visuals, change in one place.
 
 ### `12_result_single` (split view)
 
@@ -234,7 +234,7 @@ The soft warning fires **once per import**, even if the user picked five oversiz
 Hard limits were bumped from 1 GB / 25 min in Phase 1 because:
 
 - `URL.createObjectURL(file)` creates a reference, not a copy — the browser streams bytes off disk on demand.
-- The MP4 export pipeline records a fixed 1080×1434 canvas at 6 Mbps for `VIDEO_CLIP_SECONDS = 2`, so memory usage scales with output, not with source size.
+- The MP4 export pipeline records a fixed 1080×1434 canvas at 6 Mbps for `VIDEO_CLIP_SECONDS = 4`, so memory usage scales with output, not with source size.
 - Thumbnail generation only decodes the first frame.
 
 If those assumptions ever break (e.g. a future feature uses more than 2 seconds), revisit the limits before bumping further. Phases 3–4 (native plugin, native ffmpeg) are tracked in TODO.md #14.

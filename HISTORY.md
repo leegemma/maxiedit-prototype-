@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-05-07 | (this commit) | TODO #14 Phase 2 — recorder hardening. `guardRecorderVisibility(recorder)` 헬퍼로 페이지 hidden 시 자동 pause / 복귀 시 resume + "녹화 이어서 진행 중…" 토스트 (captureMp4 + downloadSingleMp4 inline recorder 둘 다 적용). `captureMp4WithRetry()` 가 6→3→1.5Mbps 3회 재시도 (downloadMp4 사용). 거부 메시지는 보수적 톤으로 "4GB / 25분" 안내 (실제 코드 한도 5GB / 60분과 의도적 분리, 사용자 헤드룸 확보용). CLAUDE.md "Video limits" 섹션에 Phase 2 + 한도 분리 정책 추가 |
+| 2026-05-07 | (this commit) | `VIDEO_CLIP_SECONDS` 2 → 4. 9-슬롯 결과 영상 + 단일 슬라이드 영상 모두 4초로 늘어남. iOS Photos 등에서 "0:01" 표시되던 사용자 체감 길이가 "0:04"로 명확해짐. 비디오 슬롯 한 사이클 더 자연스럽게 보임. 출력 사이즈는 약 2배 증가 (6 Mbps × 4초 ≈ 3 MB) |
+| 2026-05-07 | 6678004 | TODO #14 Phase 2 — recorder hardening. `guardRecorderVisibility(recorder)` 헬퍼로 페이지 hidden 시 자동 pause / 복귀 시 resume + "녹화 이어서 진행 중…" 토스트 (captureMp4 + downloadSingleMp4 inline recorder 둘 다 적용). `captureMp4WithRetry()` 가 6→3→1.5Mbps 3회 재시도 (downloadMp4 사용). 거부 메시지는 보수적 톤으로 "4GB / 25분" 안내 (실제 코드 한도 5GB / 60분과 의도적 분리, 사용자 헤드룸 확보용). CLAUDE.md "Video limits" 섹션에 Phase 2 + 한도 분리 정책 추가 |
 | 2026-05-07 | 6a5b44d | TODO #14 Phase 1 — 영상 한도 상향 + 소프트 경고 팝업. 하드 리밋 1GB→5GB / 25분→60분, 소프트 경고 1GB / 30분 (askConfirm "와! 영상이 좀 크네요!📦"). 거부 메시지의 한도 수치도 5GB/60분으로 반영. CLAUDE.md "Video limits" 섹션 신규. TODO.md #14에 Phase 1~4 전체 계획 등록 |
 | 2026-05-07 | be1ae33 | 영상 거부 메시지를 `alert()` → `showAlert` 친근 팝업으로 전환 (광고 게이트와 같은 톤·이모지). `askConfirm`에 `alertMode` 옵션 추가해 cancel 버튼 숨김 + `showAlert` 헬퍼 신규. 1GB 초과 / 25분 초과 두 케이스 각각 친근 멘트 |
 | 2026-05-07 | 206993c | Sortable.js 1.15.2 + html2canvas 1.4.1를 `lib/`에 로컬 번들로 전환. 회사망 SSL 인터셉션(Somansa 등)이 jsDelivr 응답 가로채서 SRI integrity 검증 실패 → html2canvas 미로드 → "이미지 생성에 실패했습니다" 토스트 발생하던 문제 해결. `sync:www`가 `cp -R lib www/lib` 추가. SRI integrity 속성 제거. CLAUDE.md "External dependencies" 갱신. TODO #1 SRI는 "대체됨"으로 표기 |

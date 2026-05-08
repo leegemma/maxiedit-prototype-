@@ -140,7 +140,7 @@ Bumped from the original 650-wide because at 650×… text/edges were getting co
 
 `saveBlob(blob, fileName)` walks three paths in order:
 
-1. **`cordova-plugin-photo-library`** (Capacitor builds) — `saveImage` / `saveVideo` writes directly to a `MaxiEdit` album in the system gallery, requesting `{ read: true, write: true }` first. This is the only path that lands the file in Photos/Gallery on Android; without it the WebView's anchor download dumps to `Downloads/` and Photos never sees the file.
+1. **`cordova-plugin-photo-library`** (Capacitor builds) — `saveImage` / `saveVideo` writes directly to a `MaxiEdit` album in the system gallery, requesting `{ read: true, write: true }` first. The plugin only accepts `file://` or `data:` URLs, NOT blob URLs (it reads via `ContentResolver` / `NSData` and silently fails on blob), so `saveBlob` first runs the blob through `FileReader.readAsDataURL` before passing it. This is the only path that lands the file in Photos/Gallery on Android; without it the WebView's anchor download dumps to `Downloads/` and Photos never sees the file.
 2. **`navigator.share({ files })`** — iOS Safari + recent Android Chrome share sheets. Useful for non-native browser sessions where the user can pick "사진 저장" / "Save Video".
 3. **`<a download>` anchor** — last-resort browser fallback (local dev, share API absent).
 

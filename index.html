@@ -2567,9 +2567,13 @@
     const saveBlob = async (blob, fileName) => {
       // ── Path 1: Native gallery save via cordova-plugin-photo-library.
       // Lands directly in Photos/Gallery (Android: Pictures/MaxiEdit album,
-      // iOS: Photos > MaxiEdit album) instead of the Downloads folder. We
-      // try this first on Capacitor builds; any failure falls through to
-      // Web Share / anchor.
+      // iOS: Photos > MaxiEdit album) instead of the Downloads folder.
+      //
+      // The plugin's saveImage/saveVideo only accepts a file:// URL or a
+      // data: URL — blob URLs silently fail (the plugin tries to read via
+      // ContentResolver/NSData and gets nothing). For our 4-second 6 Mbps
+      // MP4 (~3 MB) the data URL string lands around ~4 MB, which is fine
+      // on modern devices. PNG full-result is similar.
       if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
         const plugin = window.cordova && window.cordova.plugins && window.cordova.plugins.photoLibrary;
         if (plugin) {
@@ -2578,19 +2582,20 @@
               plugin.requestAuthorization(res, rej, { read: true, write: true })
             );
             const isVideo = (blob.type || '').startsWith('video/');
-            const url = URL.createObjectURL(blob);
-            try {
-              await new Promise((res, rej) => {
-                const fn = isVideo ? 'saveVideo' : 'saveImage';
-                plugin[fn](url, 'MaxiEdit', res, (err) =>
-                  rej(err instanceof Error ? err : new Error(String(err)))
-                );
-              });
-              incrementDownloadCount();
-              return true;
-            } finally {
-              URL.revokeObjectURL(url);
-            }
+            const dataUrl = await new Promise((res, rej) => {
+              const r = new FileReader();
+              r.onload = () => res(r.result);
+              r.onerror = () => rej(new Error('FileReader failed'));
+              r.readAsDataURL(blob);
+            });
+            await new Promise((res, rej) => {
+              const fn = isVideo ? 'saveVideo' : 'saveImage';
+              plugin[fn](dataUrl, 'MaxiEdit', res, (err) =>
+                rej(err instanceof Error ? err : new Error(String(err)))
+              );
+            });
+            incrementDownloadCount();
+            return true;
           } catch (err) {
             console.warn('[saveBlob] photo-library save failed, falling back', err);
             // fall through to Web Share / anchor

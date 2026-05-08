@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-05-08 | (this commit) | `.home-badge` 패딩 `1px 6px` → `0 5px` 로 추가 컴팩트화. 칩 높이는 font-size 10 × line-height 1.4 = 14px 그대로 유지, 좌우만 더 타이트하게. |
+| 2026-05-08 | (this commit) | `.home-card-title` 에 `text-shadow: 0 1px 4px rgba(0,0,0,0.35)` 추가. 15% scrim만으론 high-key 사진 위에서 흰 타이틀 읽기 어려운 케이스 보완. 모든 배너(매거진/피드자르기/슬라이드피드) 공통 적용 |
+| 2026-05-08 | f12c975 | `.home-badge` 패딩 `1px 6px` → `0 5px` 로 추가 컴팩트화. 칩 높이는 font-size 10 × line-height 1.4 = 14px 그대로 유지, 좌우만 더 타이트하게. |
 | 2026-05-08 | 9ec2a5b | 매거진느낌 피드 카드 썸네일을 `thum_feed_image01.png` → `thum_feed_image02.png` 로 교체. (이전 커밋에서 새 이미지 자산만 선반영했고 이번 커밋이 실제 src 변경) |
 | 2026-05-08 | f9b54a0 | `images/thum_feed_image02.png` 추가 (304 KB). 다른 머신에서 피드 카드 썸네일 교체 작업용 자산 선반영 |
 | 2026-05-08 | (prev) | 홈 배너 v4 마이크로 튜닝 — (1) `.home-badge` 내부 padding `2px 8px` → `1px 6px` (칩 컴팩트화), (2) `.home-card` flex `gap` 8px → `4px` (칩 ↔ 타이틀 간격 반감), (3) 섹션 간격 32px → **24px** (v=84 수준으로 복귀, 32px는 너무 벌어짐) |

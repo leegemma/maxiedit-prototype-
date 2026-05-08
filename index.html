@@ -249,6 +249,10 @@
       font-size: 15px;
       font-weight: 600;
       margin: 0;
+      /* Subtle drop shadow so the title stays readable on a busy
+         photo background (the 15% scrim alone may not be enough for
+         high-key images). Soft 4px blur, low opacity. */
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
     }
     .home-badge {
       display: inline-block;

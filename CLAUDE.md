@@ -11,6 +11,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Designed at **393×852** (iPhone portrait); on-screen frame is `min(393px, 100vw) × 100dvh` to safely handle 320~440px devices. Tablet/desktop responsive is option C / out of scope here. UI text is Korean.
 
+The `full_image` preview surface (`10_result`, `12_result_single`) intentionally renders **smaller than the frame**: a 393×522 layout box scaled to **331×440 visual** (≈0.842×) so the preview leaves breathing room above the indicator on shorter devices. The scale is applied via `transform: scale(0.842); transform-origin: top center` on `.result .full-image` (so all internal coordinates stay at design values), and `.split-track` on the single page is sized directly to `height: 440px` to match. Output dimensions (1080×1434) are unaffected — `capturePng()` measures `offsetWidth` (which is the unscaled 393), and `drawFullImageFrame()` paints at output resolution from state, never from layout.
+
 External dependencies:
 
 - **Bundled locally** under `lib/` (committed, copied to `www/lib/` by `sync:www`):
@@ -47,7 +49,7 @@ Android Studio, Xcode, and CocoaPods all refuse to operate inside the iCloud + K
 
 ## Narrow device handling (option B)
 
-The base design is 393×852, but the on-screen frame uses `width: min(393px, 100vw)` so devices in the 320~440 range (iPhone SE, low-end Android) don't clip horizontally. Vertical dimensions stay fixed (`height: 522px`, indicator `top: 596`, split-track `top: 50`, etc.) — height responsiveness is out of scope here, planned for option C.
+The base design is 393×852, but the on-screen frame uses `width: min(393px, 100vw)` so devices in the 320~440 range (iPhone SE, low-end Android) don't clip horizontally. Vertical dimensions stay fixed (`.full-image` layout box `height: 522px` scaled to 440px visual on `.result`, indicator `top: 514`, split-track `top: 50` × `height: 440`, etc.) — height responsiveness is out of scope here, planned for option C.
 
 Concretely:
 - `:root` exposes `--frame-width: min(393px, 100vw)` so any layer that needs the unscaled frame width can read it.
@@ -68,7 +70,7 @@ The app navigates between four discrete pages plus one modal. **Only one page is
 |---|---|---|
 | `#page-home` | `00_home` | initial route |
 | `#page-edit` | `02_edit` | home `btn_start` |
-| `#page-result` | `10_result` | edit `btn_next` (≥1 photo selected) |
+| `#page-result` | `10_result` | edit `btn_next` (≥1 photo selected) — full_image scaled to 331×440 visual via `transform: scale(0.842)` |
 | `#page-single` | `12_result_single` | result indicator dot or slot tap |
 | `#textedit-overlay` | `11_textedit` (modal) | `btn_text` on result/single |
 | `#download-modal` | (modal) | `btn_download` on result/single |
@@ -99,19 +101,23 @@ When adding derived UI, plug into the matching renderer — don't add a fourth s
 ### Shared `full_image` component
 
 The 3×3 color-slot grid + textarea legend is rendered identically in two places:
-- `10_result` — full 393×522 size, positioned absolute at `top: 50`
-- `02_edit` preview — same DOM structure inside `.preview-viewport`, scaled via CSS transform
+- `10_result` — 393×522 layout box positioned absolute at `top: 50`, then visually scaled to **331×440 (≈0.842×)** via `transform: scale(0.842); transform-origin: top center`. All internal coordinates (grid offsets, textarea `top: 448`, slot heights) stay at design values; only the bounding box shrinks.
+- `02_edit` preview — same DOM structure inside `.preview-viewport`, separately scaled via `--preview-scale` (0.4)
+
+The legend font-size is compensated on the result page so the bottom 9-line text stays at **8px visual** after the scale: `.result .textarea { font-size: calc(8px / 0.842) }` and `.result .textarea p { line-height: calc(11px / 0.842) }`. The edit-page preview deliberately doesn't compensate (it's a thumbnail, smaller is fine).
 
 `buildResultStyleGrid(target, onCellClick?)` populates both grids; `renderGridSlots(gridEl, { animateVideos })` syncs their colors/opacity to `selected[]`. The result grid passes `animateVideos: true` so video slots get a live `<video autoplay loop muted playsinline>` element capped at `VIDEO_CLIP_SECONDS` (currently 4). When editing grid visuals, change in one place.
 
 ### `12_result_single` (split view)
 
-A horizontal scroll-snap track (`#split-track`) holding one `.split-slide` per selected slot. The track is sized **identically to `10_result`'s `.full-image`**: `top: 50px; height: 522px` so the visible preview area is exactly 393×522 on both pages and the indicator (`top: 596px`) lands 24px below either content area.
+A horizontal scroll-snap track (`#split-track`) holding one `.split-slide` per selected slot. The track is sized to **match `10_result`'s visually-scaled `.full-image`**: `top: 50px; height: 440px` so the visible preview area is 393×440 (full frame width × scaled height) on both pages and the indicator (`top: 514px`) lands 24px below either content area. The track is *not* scaled with `transform` because each slide is editable in place — it's sized directly.
 
 Each `.split-slide` is full-width (`flex: 0 0 100%`) and split 5:5:
 
-- `.split-image` — `width: 100%`, `flex: 0 0 50%` (top half = 261px, full slide width)
+- `.split-image` — `width: 100%`, `flex: 0 0 50%` (top half = 220px, full slide width)
 - `.split-text` — `width: 100%`, `flex: 0 0 50%` (bottom half; tappable, opens `11_textedit` for that slot's caption)
+
+The center flip button sits at the boundary: `top: calc(50px + 220px) = 270px` (track top + half track height).
 
 Toggling `.is-flipped` on the current slide flips image and text via `flex-direction: column-reverse`. Right-swipe at slide 0 (scrollLeft 0) returns to `10_result`; the indicator's leftmost dot does the same on click.
 

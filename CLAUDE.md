@@ -237,7 +237,21 @@ Hard limits were bumped from 1 GB / 25 min in Phase 1 because:
 - The MP4 export pipeline records a fixed 1080×1434 canvas at 6 Mbps for `VIDEO_CLIP_SECONDS = 2`, so memory usage scales with output, not with source size.
 - Thumbnail generation only decodes the first frame.
 
-If those assumptions ever break (e.g. a future feature uses more than 2 seconds), revisit the limits before bumping further. Phases 2–4 (Streams API, native plugin, native ffmpeg) are tracked in TODO.md #14.
+If those assumptions ever break (e.g. a future feature uses more than 2 seconds), revisit the limits before bumping further. Phases 3–4 (native plugin, native ffmpeg) are tracked in TODO.md #14.
+
+### Phase 2 — recorder hardening
+
+Two helpers wrap every MP4 export so a brief network/OS hiccup doesn't kill the whole download:
+
+- `guardRecorderVisibility(recorder)` adds a `visibilitychange` listener. If the page hides while `recorder.state === 'recording'`, the recorder is paused; on return to visible it resumes and shows a "녹화 이어서 진행 중…" toast. Returns a `detach()` to call from `onstop`/`onerror` so the listener doesn't outlive the recorder.
+- `captureMp4WithRetry()` wraps `captureMp4(bitrate)` with three attempts: `VIDEO_BITRATE` → half → quarter. A recorder error or thrown exception triggers the next attempt with a "인코딩 재시도 (XMbps)" toast. Used by `downloadMp4`. The single-slide path (`downloadSingleMp4`) wires the visibility guard but skips bitrate retry — it's a much shorter encode and rarely fails in practice; revisit if real-device data shows otherwise.
+
+The conservative copy in the hard-reject popups deliberately under-states the limit (4 GB / 25 min) even though the code allows 5 GB / 60 min, so users leave headroom and aren't surprised when a borderline file works.
+
+User-facing rejection text and code limits are intentionally split:
+
+- Code limits: 5 GB / 60 min — this is what the device actually tolerates with current architecture.
+- Rejection popup wording: "4GB" / "25분" — guides users to a safer working zone so they're never surprised by a failure.
 
 ## Ads (AdMob)
 

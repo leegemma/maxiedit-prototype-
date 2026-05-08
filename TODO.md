@@ -21,7 +21,7 @@
 | 🟡 11 | 진짜 반응형 (옵션 C) | ⏳ 미완료 | 1회 + Figma 동반 | X |
 | 🟡 12 | iOS 앱 출시 (Capacitor iOS) | ⏳ 미완료 | 1회 + 연 1회 Xcode/SDK 점검 | X |
 | 🟡 13 | AdMob Rewarded 광고 연동 | ✅ Android · iOS production (isTesting 유지) | 1회 + production ID 교체 | X |
-| 🟡 14 | 영상 고용량 처리 (Phase 1~4, 서버 미사용) | 🟨 Phase 1 진행 | 단계별 1회 | X |
+| 🟡 14 | 영상 고용량 처리 (Phase 1~4, 서버 미사용) | 🟨 Phase 1·2 완료, 3·4 미시작 | 단계별 1회 | X |
 
 ---
 
@@ -623,19 +623,18 @@ Phase 1 — 영상 한도 상향 + 친근 UX.
 - 5GB / 60min 초과 시 친근 거부 popup
 - 1GB / 30min 초과 시 소프트 경고 popup → 진행 선택 가능
 
-### Phase 2 — Streams API + 메모리 hardening (3~5일, 중위험)
+### Phase 2 — recorder hardening (완료 2026-05-07)
 
-- [ ] 미시작 (Phase 1 검증 후 시작)
+- [x] **2a** 썸네일 디코더 정리 — `generateVideoThumbnail` 의 `cleanup()` 이 `removeAttribute('src')` + `load()` 까지 호출. 검증 후 추가 변경 불필요.
+- [x] **2b** 백그라운드 진입 가드 — `guardRecorderVisibility(recorder)` 헬퍼 신규. `captureMp4` 와 `downloadSingleMp4` 의 inline recorder 둘 다 적용. 페이지 hidden 시 `recorder.pause()`, 복귀 시 `recorder.resume()` + "녹화 이어서 진행 중…" 토스트.
+- [x] **2c** 비트레이트 자동 재시도 — `captureMp4WithRetry()` 가 6 → 3 → 1.5 Mbps 순으로 3회 시도. `downloadMp4` 가 사용. 단일 슬라이드 경로(`downloadSingleMp4`)는 가드만 적용, 재시도는 짧은 인코딩이라 일단 보류 (실기 데이터 보고 결정).
+- [ ] 메모리 압박 이벤트 핸들 — Chrome `low-memory`, iOS WKWebView `memorywarning` 은 WebView 호환성 일관성 부족으로 보류. 실기에서 OOM 패턴 보이면 추가.
 
-**범위**:
-- 썸네일 생성 시 hidden video element를 `seekTarget = 0.05s` 만 디코드하고 즉시 close
-- 비디오 export 도중 백그라운드 진입 감지 (`document.visibilitychange`) → 일시정지 + 토스트
-- MediaRecorder가 fail/timeout 나면 자동 재시도 (낮은 비트레이트로)
-- 메모리 압박 시 `low-memory` event (Chrome) 또는 `memorywarning` (iOS WKWebView) 핸들 → 진행 중이면 정중히 중단 안내
+**달성 결과**:
+- 백그라운드 dip 견딤 (앱 잠깐 백그라운드 → 다시 켜도 인코딩 재개)
+- 첫 시도 fail 시 자동 낮은 비트레이트 재시도로 성공률 ↑
 
-**완료 기준**:
-- 4K 60fps 30분 영상 (~5GB) export 시 OOM 없이 완료
-- 백그라운드 진입 후 복귀해도 작업 재개 가능
+CLAUDE.md "Video limits" 섹션에 두 헬퍼와 의도된 코드/메시지 한도 분리 정책 명시.
 
 ### Phase 3 — 네이티브 비디오 처리 플러그인 (1~2주, 큰 변화) 💡
 

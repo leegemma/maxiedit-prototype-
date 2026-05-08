@@ -2261,10 +2261,13 @@
       }
 
       if (oversized) {
-        await showAlert('앗, 영상이 너무 커요!📦\n5GB가 넘는 영상은 핸드폰이 버거워해요.\n조금 더 작은 사이즈로 다시 시도해 주세요!🙏');
+        // Conservative copy: real hard limit is 5 GB but we tell users
+        // "4 GB" so they leave headroom and don't push the device.
+        await showAlert('앗, 영상이 너무 커요!📦\n4GB 이내 영상으로 부탁드려요.\n조금 더 작은 사이즈로 다시 시도해 주세요!🙏');
       }
       if (toolong) {
-        await showAlert('앗, 영상이 너무 길어요!⏰\n60분 이내 영상만 넣을 수 있어요.\n잠깐 잘라서 다시 와 주세요!✂️✨');
+        // Same idea — hard limit is 60 min but copy keeps users at 25 min.
+        await showAlert('앗, 영상이 너무 길어요!⏰\n25분 이내 영상만 넣을 수 있어요.\n잠깐 잘라서 다시 와 주세요!✂️✨');
       }
       if (thumbFailures.length) {
         showToast(`썸네일 실패 ${thumbFailures.length}개 · ${firstError.slice(0, 40)}`);
@@ -2684,6 +2687,28 @@
       }
     };
 
+    // TODO #14 Phase 2b — pause MediaRecorder when the page hides, resume
+    // when it comes back. Long encodings used to die silently when the OS
+    // suspended the WebView; this keeps the recorder alive across a brief
+    // background dip. Returns a detach() to call from onstop/onerror.
+    const guardRecorderVisibility = (recorder) => {
+      let pausedByVisibility = false;
+      const onChange = () => {
+        if (!recorder) return;
+        if (document.hidden && recorder.state === 'recording') {
+          try { recorder.pause(); pausedByVisibility = true; } catch {}
+        } else if (!document.hidden && pausedByVisibility && recorder.state === 'paused') {
+          try {
+            recorder.resume();
+            pausedByVisibility = false;
+            showToast('녹화 이어서 진행 중…', { showIcon: false });
+          } catch {}
+        }
+      };
+      document.addEventListener('visibilitychange', onChange);
+      return () => document.removeEventListener('visibilitychange', onChange);
+    };
+
     const pickRecorderMime = () => {
       if (typeof MediaRecorder === 'undefined') return null;
       const candidates = [
@@ -2756,7 +2781,7 @@
     // playing video slots for VIDEO_CLIP_SECONDS.
     // Output is always silent — canvas.captureStream has no audio track, and the
     // ffmpeg fallback also drops audio with -an.
-    const captureMp4 = async () => {
+    const captureMp4 = async (bitrate = VIDEO_BITRATE) => {
       if (typeof MediaRecorder === 'undefined' || !HTMLCanvasElement.prototype.captureStream) {
         throw new Error('MediaRecorder/captureStream not supported');
       }
@@ -2815,11 +2840,13 @@
       drawFullImageFrame(ctx, canvas.width, canvas.height, slots);
 
       const stream = canvas.captureStream(30);
-      const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: VIDEO_BITRATE });
+      const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: bitrate });
       const chunks = [];
       recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
 
+      const detachVisibilityGuard = guardRecorderVisibility(recorder);
       const cleanup = () => {
+        detachVisibilityGuard();
         slots.forEach((s) => {
           if (s && s.type === 'video') {
             try { s.videoEl.pause(); } catch {}
@@ -2875,12 +2902,32 @@
       }
     };
 
+    // TODO #14 Phase 2c — try captureMp4 at the default 6 Mbps, fall back to
+    // 3 Mbps then 1.5 Mbps when MediaRecorder fails (heavy frames + tight
+    // memory often surface as a recorder error rather than an exception).
+    const captureMp4WithRetry = async () => {
+      const bitrates = [VIDEO_BITRATE, Math.floor(VIDEO_BITRATE / 2), Math.floor(VIDEO_BITRATE / 4)];
+      let lastErr = null;
+      for (let i = 0; i < bitrates.length; i++) {
+        try {
+          return await captureMp4(bitrates[i]);
+        } catch (err) {
+          lastErr = err;
+          console.warn(`[mp4] attempt ${i + 1}/${bitrates.length} at ${Math.round(bitrates[i] / 1e6)}Mbps failed`, err);
+          if (i < bitrates.length - 1) {
+            showToast(`인코딩 재시도 (${Math.round(bitrates[i + 1] / 1e6)}Mbps)`, { showIcon: false });
+          }
+        }
+      }
+      throw lastErr;
+    };
+
     const downloadMp4 = async () => {
       btnDownload.disabled = true;
       loadingBarEl.removeAttribute('hidden');
       setDownloadingState(true);
       try {
-        const { blob, mime } = await captureMp4();
+        const { blob, mime } = await captureMp4WithRetry();
         let finalBlob = blob;
         // Force an actual MP4 container. If MediaRecorder already gave us mp4
         // we pass through; otherwise transcode via ffmpeg.wasm.
@@ -3363,12 +3410,13 @@
         const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: VIDEO_BITRATE });
         const chunks = [];
         recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+        const detachVisibilityGuard = guardRecorderVisibility(recorder);
         recorder.start();
         const startT = performance.now();
 
         const rawBlob = await new Promise((resolve, reject) => {
-          recorder.onerror = (e) => { slide.cleanup(); reject(new Error('recorder')); };
-          recorder.onstop = () => { slide.cleanup(); resolve(new Blob(chunks, { type: mime })); };
+          recorder.onerror = (e) => { detachVisibilityGuard(); slide.cleanup(); reject(new Error('recorder')); };
+          recorder.onstop = () => { detachVisibilityGuard(); slide.cleanup(); resolve(new Blob(chunks, { type: mime })); };
           const draw = () => {
             const elapsed = (performance.now() - startT) / 1000;
             if (slide.type === 'video' && slide.videoEl.currentTime >= VIDEO_CLIP_SECONDS) {

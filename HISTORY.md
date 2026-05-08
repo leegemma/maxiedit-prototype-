@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-05-07 | (this commit) | 홈 화면 정리 — (1) 매거진 피드 카드 이미지 `width:100%/height:auto` → `object-fit: contain` 으로 전환해 잘리던 톱·바텀 노출, (2) 피드자르기·슬라이드피드 카드를 카루셀 밖에서 → 준비중 탭 안으로 이동, (3) "준비중인 콘텐츠가 없어요" 빈 placeholder 섹션·CSS 제거 (이제 준비중 탭에 실제 카드 2개 존재) |
+| 2026-05-07 | (this commit) | (1) 홈 탭에도 ig 피드 만들기 두 카드 다시 노출 (홈 = 매거진 + ig 카드, 준비중 = ig 카드만 — 두 탭 모두 표시되도록 동일 카드를 두 섹션에 중복 배치). (2) `saveBlob` 1순위 경로 신설 — `cordova.plugins.photoLibrary.saveImage / saveVideo` 로 Android 갤러리·iOS Photos에 'MaxiEdit' 앨범 직저장. 실패 시 navigator.share → anchor 순으로 폴백. CLAUDE.md "Download flow" 3경로 명시 |
+| 2026-05-07 | 73537a0 | 홈 화면 정리 — (1) 매거진 피드 카드 이미지 `width:100%/height:auto` → `object-fit: contain` 으로 전환해 잘리던 톱·바텀 노출, (2) 피드자르기·슬라이드피드 카드를 카루셀 밖에서 → 준비중 탭 안으로 이동, (3) "준비중인 콘텐츠가 없어요" 빈 placeholder 섹션·CSS 제거 (이제 준비중 탭에 실제 카드 2개 존재) |
 | 2026-05-07 | 3e6bea3 | `VIDEO_CLIP_SECONDS` 2 → 4. 9-슬롯 결과 영상 + 단일 슬라이드 영상 모두 4초로 늘어남. iOS Photos 등에서 "0:01" 표시되던 사용자 체감 길이가 "0:04"로 명확해짐. 비디오 슬롯 한 사이클 더 자연스럽게 보임. 출력 사이즈는 약 2배 증가 (6 Mbps × 4초 ≈ 3 MB) |
 | 2026-05-07 | 6678004 | TODO #14 Phase 2 — recorder hardening. `guardRecorderVisibility(recorder)` 헬퍼로 페이지 hidden 시 자동 pause / 복귀 시 resume + "녹화 이어서 진행 중…" 토스트 (captureMp4 + downloadSingleMp4 inline recorder 둘 다 적용). `captureMp4WithRetry()` 가 6→3→1.5Mbps 3회 재시도 (downloadMp4 사용). 거부 메시지는 보수적 톤으로 "4GB / 25분" 안내 (실제 코드 한도 5GB / 60분과 의도적 분리, 사용자 헤드룸 확보용). CLAUDE.md "Video limits" 섹션에 Phase 2 + 한도 분리 정책 추가 |
 | 2026-05-07 | 6a5b44d | TODO #14 Phase 1 — 영상 한도 상향 + 소프트 경고 팝업. 하드 리밋 1GB→5GB / 25분→60분, 소프트 경고 1GB / 30분 (askConfirm "와! 영상이 좀 크네요!📦"). 거부 메시지의 한도 수치도 5GB/60분으로 반영. CLAUDE.md "Video limits" 섹션 신규. TODO.md #14에 Phase 1~4 전체 계획 등록 |

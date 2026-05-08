@@ -169,6 +169,11 @@
     }
     .home-section { margin: 0 0 24px; }
     .home-section + .home-section { margin-top: 4px; }
+    /* When two section blocks live inside one .home-section (home tab has the
+       "새로 나왔어요" hero AND the "ig 피드 만들기" cards stacked), the second
+       title needs explicit top spacing so it visually separates from the hero
+       card. Without this it sits flush against the previous card. */
+    .home-section-title--inline { margin-top: 24px; }
     .home-section-title {
       font-family: inherit;
       font-size: 17px;
@@ -1418,9 +1423,18 @@
             <span class="home-badge is-new">New</span>
             <span class="home-card-title">매거진느낌 피드</span>
           </button>
+          <h2 class="home-section-title home-section-title--inline">ig 피드 만들기</h2>
+          <button class="home-card is-disabled" type="button" aria-disabled="true" data-name="card_feed_crop">
+            <span class="home-badge is-soon">업데이트 예정</span>
+            <span class="home-card-title">피드자르기</span>
+          </button>
+          <button class="home-card is-disabled" type="button" aria-disabled="true" data-name="card_slide_feed">
+            <span class="home-badge is-soon">업데이트 예정</span>
+            <span class="home-card-title">슬라이드 피드</span>
+          </button>
         </section>
-        <!-- 준비중 탭: ig 피드 만들기 두 카드. 둘 다 aria-disabled 라 탭하면
-             "준비 중이에요" 토스트가 뜸. 빈 placeholder 멘트는 제거. -->
+        <!-- 준비중 탭: 동일한 ig 피드 만들기 두 카드를 그대로 노출. 둘 다
+             aria-disabled 라 탭하면 "준비 중이에요" 토스트가 뜸. -->
         <section class="home-section" data-tab="upcoming">
           <h2 class="home-section-title">ig 피드 만들기</h2>
           <button class="home-card is-disabled" type="button" aria-disabled="true" data-name="card_feed_crop">
@@ -2551,6 +2565,40 @@
 
     // Share / anchor-download a Blob as a given file name.
     const saveBlob = async (blob, fileName) => {
+      // ── Path 1: Native gallery save via cordova-plugin-photo-library.
+      // Lands directly in Photos/Gallery (Android: Pictures/MaxiEdit album,
+      // iOS: Photos > MaxiEdit album) instead of the Downloads folder. We
+      // try this first on Capacitor builds; any failure falls through to
+      // Web Share / anchor.
+      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+        const plugin = window.cordova && window.cordova.plugins && window.cordova.plugins.photoLibrary;
+        if (plugin) {
+          try {
+            await new Promise((res, rej) =>
+              plugin.requestAuthorization(res, rej, { read: true, write: true })
+            );
+            const isVideo = (blob.type || '').startsWith('video/');
+            const url = URL.createObjectURL(blob);
+            try {
+              await new Promise((res, rej) => {
+                const fn = isVideo ? 'saveVideo' : 'saveImage';
+                plugin[fn](url, 'MaxiEdit', res, (err) =>
+                  rej(err instanceof Error ? err : new Error(String(err)))
+                );
+              });
+              incrementDownloadCount();
+              return true;
+            } finally {
+              URL.revokeObjectURL(url);
+            }
+          } catch (err) {
+            console.warn('[saveBlob] photo-library save failed, falling back', err);
+            // fall through to Web Share / anchor
+          }
+        }
+      }
+
+      // ── Path 2: Web Share API (iOS Safari, recent Android Chrome).
       const file = new File([blob], fileName, { type: blob.type });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
@@ -2562,6 +2610,8 @@
           // other errors → fall through to anchor download
         }
       }
+
+      // ── Path 3: Anchor download (browser fallback).
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

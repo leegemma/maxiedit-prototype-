@@ -138,7 +138,11 @@ Bumped from the original 650-wide because at 650×… text/edges were getting co
 - **영상** dispatches to `downloadMp4()` / `downloadSingleMp4()`. Both record a 2s canvas stream, fall back to ffmpeg.wasm transcode (lazy-loaded from CDN, ~25 MB on first use) when MediaRecorder doesn't emit MP4 natively.
 - **모두 저장** — `downloadAllContent()` saves the full result first (PNG if all photos, MP4 if any video) then iterates each selected slot saving as PNG (image) or MP4 (video). Mobile share sheets fire one at a time.
 
-`saveBlob(blob, fileName)` prefers `navigator.share({ files })` so iOS gets the native share sheet with "Save Image" / "Save Video"; falls back to anchor-download elsewhere.
+`saveBlob(blob, fileName)` walks three paths in order:
+
+1. **`cordova-plugin-photo-library`** (Capacitor builds) — `saveImage` / `saveVideo` writes directly to a `MaxiEdit` album in the system gallery, requesting `{ read: true, write: true }` first. This is the only path that lands the file in Photos/Gallery on Android; without it the WebView's anchor download dumps to `Downloads/` and Photos never sees the file.
+2. **`navigator.share({ files })`** — iOS Safari + recent Android Chrome share sheets. Useful for non-native browser sessions where the user can pick "사진 저장" / "Save Video".
+3. **`<a download>` anchor** — last-resort browser fallback (local dev, share API absent).
 
 ### `11_textedit` modal behavior
 

@@ -389,7 +389,7 @@
 
     /* confirm dialog (reused for X / reset on edit page) */
     .confirm-card {
-      width: 280px;
+      width: 300px;
       max-width: 80vw;
       background: #fff;
       border-radius: 12px;
@@ -1705,7 +1705,7 @@
     };
 
     const AD_GATE_PROMPT =
-      '잠깐만요!🖐️\n1회 광고시청 후 바로 다운로드가 시작되요!\n보고나면 바로 준비해드릴게요...👉👈\n정말 감사합니다!🥺';
+      '잠깐만요!🖐️\n1회 광고시청 후 바로 다운로드돼요!\n보고나면 바로 준비해드릴게요...👉👈\n정말 감사합니다!🥺';
 
     const MAX_SELECT = 9;
     const SLOT_COLORS = [
@@ -2239,7 +2239,7 @@
             // popups. Cancel here aborts the rest of the import too.
             if (!softWarned && f.size > SOFT_VIDEO_SIZE_BYTES) {
               loadingBarEl.setAttribute('hidden', '');
-              const ok = await askConfirm('와! 영상이 좀 크네요!📦\n처리에 1~2분 정도 걸려도 괜찮을까요?\n진행하면 잠깐만 기다려 주세요!⏳');
+              const ok = await askConfirm('엇! 영상이 좀 크네요!📦\n처리에 1~2분 정도 소요돼요.\n잠깐만 기다려 주세요!⏳');
               loadingBarEl.removeAttribute('hidden');
               softWarned = true;
               if (!ok) break;
@@ -2254,7 +2254,7 @@
               }
               if (duration && duration > SOFT_VIDEO_DURATION_S && !softWarned) {
                 loadingBarEl.setAttribute('hidden', '');
-                const ok = await askConfirm('와! 영상이 좀 기네요!⏰\n처리에 1~2분 정도 걸려도 괜찮을까요?\n진행하면 잠깐만 기다려 주세요!⏳');
+                const ok = await askConfirm('엇! 영상이 좀 기네요!⏰\n처리에 1~2분 정도 소요돼요.\n잠깐만 기다려 주세요!⏳');
                 loadingBarEl.removeAttribute('hidden');
                 softWarned = true;
                 if (!ok) {
@@ -2293,7 +2293,7 @@
       if (oversized) {
         // Conservative copy: real hard limit is 5 GB but we tell users
         // "4 GB" so they leave headroom and don't push the device.
-        await showAlert('앗, 영상이 너무 커요!📦\n4GB 이내 영상으로 부탁드려요.\n조금 더 작은 사이즈로 다시 시도해 주세요!🙏');
+        await showAlert('앗, 영상이 너무 커요!📦\n4GB 이내 영상으로 부탁드려요.\n좀 더 작은 사이즈로 시도해주세요!');
       }
       if (toolong) {
         // Same idea — hard limit is 60 min but copy keeps users at 25 min.

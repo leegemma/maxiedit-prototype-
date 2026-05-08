@@ -218,14 +218,19 @@
       display: block;
       z-index: 0;
     }
-    /* Thumbnail scrim: a 15% black overlay — just enough darkening to
-       keep white text legible without dimming the photo's color. The
-       earlier 25% / 40% values still flattened the magazine thumbnail
-       too aggressively. */
+    /* Bottom-only gradient: full-card flat scrim was tinting the photo
+       across the entire frame. Replaced with a linear-gradient that
+       darkens just the bottom ~50% (where the badge + title sit) and
+       fades to fully transparent at the top so the photo's upper half
+       reads at its natural color. */
     .home-card-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.15);
+      background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.65) 0%,
+        rgba(0, 0, 0, 0) 50%
+      );
       pointer-events: none;
       z-index: 1;
     }

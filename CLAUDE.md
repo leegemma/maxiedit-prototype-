@@ -163,7 +163,9 @@ The whole chrome uses a single design vocabulary:
 - **Tabs**: bottom-border underline indicator (`.cat-tab.is-active { border-bottom: 1px solid #fff }`), no pills.
 - **Indicator dots**: 5×5 muted dot, expands to 18×5 white pill on `.is-active` with a width transition.
 - **Footer button stack** (`.btn-reset` on result, `.btn-text-single`/`.btn-flip` on single): icon on top, 10px uppercase 0.22em label below, `gap: 10px; padding: 10px 20px` so all three line up vertically.
-- **Thumbnail scrim**: every photographic thumbnail used as a card background sits under a black scrim so foreground text and badges stay legible regardless of the underlying image. Implement as a sibling absolute-positioned overlay above the image and below the content (see `.home-card-overlay`), not as a CSS filter — the user wants the photo's own contrast preserved with a flat darkening pass. Default opacity tuned per surface: home banner uses **15%** (`rgba(0, 0, 0, 0.15)`) so the photo's color stays vivid; other thumbnails (e.g. `.thumb` in `bottom_layer_select`) keep the original 30~40% range when readability matters more than photo color fidelity.
+- **Thumbnail scrim**: every photographic thumbnail used as a card background sits under a black scrim so foreground text and badges stay legible regardless of the underlying image. Implement as a sibling absolute-positioned overlay above the image and below the content (see `.home-card-overlay`), not as a CSS filter — the user wants the photo's own contrast preserved with a flat darkening pass. Two flavors:
+  - **Home banner** (`.home-card-overlay`): bottom-only gradient — `linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0) 50%)`. Top half of the photo reads at natural color; bottom half darkens behind the badge + title.
+  - **Other photographic thumbnails** (e.g. `.thumb` in `bottom_layer_select`): a flat 30~40% scrim across the full surface when global readability matters more than photo color fidelity.
 
 When designing a new chrome surface, copy from these tokens. Don't invent a new pill or new border radius.
 

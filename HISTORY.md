@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-05-08 | (this commit) | `.home-card-overlay` 를 전체 15% 평면 scrim → **하단 그라데이션** (`linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 50%)`)으로 교체. 사진 상단 절반은 원본 색감, 하단(타이틀+배지 영역)만 짙게 어두워져 가독성↑. CLAUDE.md "Thumbnail scrim" 규칙에 home-banner 그라데이션 / 다른 thumbnail 평면 scrim 두 종류 명시 |
+| 2026-05-08 | (this commit) | `.bottom-layer-select` 좌측 패딩 16px → **8px** (상단 8px와 일치). 첫 번째 선택 썸네일이 화면 가장자리에 더 가까워짐 |
+| 2026-05-08 | (prev) | `.home-card-overlay` 를 전체 15% 평면 scrim → **하단 그라데이션** (`linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 50%)`)으로 교체. 사진 상단 절반은 원본 색감, 하단(타이틀+배지 영역)만 짙게 어두워져 가독성↑. CLAUDE.md "Thumbnail scrim" 규칙에 home-banner 그라데이션 / 다른 thumbnail 평면 scrim 두 종류 명시 |
 | 2026-05-08 | 7861370 | 홈 화면 스크롤 안 되던 버그 수정. `#page-home`은 `display: flex; flex-direction: column`이라 자식이 default `flex-shrink: 1`로 짜그러져 `.home-tab-track`이 viewport 높이만큼만 차지 + 안의 `overflow: hidden`으로 슬라이드피드 카드 클립 + 전체 높이가 viewport에 맞아 스크롤 안 생김. `.home-tab-track { flex-shrink: 0 }` 추가로 트랙이 natural content height 유지 → `#page-home`의 `overflow-y: auto`가 정상 스크롤 |
 | 2026-05-08 | (prev) | `images/thum_feed_image02.png` 재업로드 (299 KB, 직전 304 KB 버전 대체). 매거진 피드 카드에 적용된 동일 파일을 다듬어 교체 |
 | 2026-05-08 | (prev) | `.home-card-title` 에 `text-shadow: 0 1px 4px rgba(0,0,0,0.35)` 추가. 15% scrim만으론 high-key 사진 위에서 흰 타이틀 읽기 어려운 케이스 보완. 모든 배너(매거진/피드자르기/슬라이드피드) 공통 적용 |

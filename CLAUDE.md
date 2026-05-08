@@ -220,6 +220,25 @@ Both currently just `console.error` with structured context. This is **stage 1**
 
 Don't swallow errors in app code by adding broad `try/catch` blocks just to silence them — let them bubble to these handlers so they're visible.
 
+## Video limits
+
+Two thresholds, both per-file (TODO #14 Phase 1):
+
+| | Size | Duration | Behavior |
+|---|---|---|---|
+| **Hard reject** | `MAX_VIDEO_SIZE_BYTES = 5 GB` | `MAX_VIDEO_DURATION_S = 60 min` | `showAlert` with friendly emoji popup; the file is dropped from the import. |
+| **Soft warning** | `SOFT_VIDEO_SIZE_BYTES = 1 GB` | `SOFT_VIDEO_DURATION_S = 30 min` | `askConfirm` "와! 영상이 좀 크네요/기네요!📦⏰ 처리에 1~2분 정도…" — proceed on 확인, abort the entire import on 취소. |
+
+The soft warning fires **once per import**, even if the user picked five oversized clips, so the popup doesn't spam. Hard rejects accumulate and surface as one popup at the end.
+
+Hard limits were bumped from 1 GB / 25 min in Phase 1 because:
+
+- `URL.createObjectURL(file)` creates a reference, not a copy — the browser streams bytes off disk on demand.
+- The MP4 export pipeline records a fixed 1080×1434 canvas at 6 Mbps for `VIDEO_CLIP_SECONDS = 2`, so memory usage scales with output, not with source size.
+- Thumbnail generation only decodes the first frame.
+
+If those assumptions ever break (e.g. a future feature uses more than 2 seconds), revisit the limits before bumping further. Phases 2–4 (Streams API, native plugin, native ffmpeg) are tracked in TODO.md #14.
+
 ## Ads (AdMob)
 
 The app monetizes via Google AdMob through the [`@capacitor-community/admob`](https://github.com/capacitor-community/admob) plugin (v6.x). Currently wired to **Rewarded Video** ads gated to the download flow:

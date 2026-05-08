@@ -21,6 +21,7 @@
 | 🟡 11 | 진짜 반응형 (옵션 C) | ⏳ 미완료 | 1회 + Figma 동반 | X |
 | 🟡 12 | iOS 앱 출시 (Capacitor iOS) | ⏳ 미완료 | 1회 + 연 1회 Xcode/SDK 점검 | X |
 | 🟡 13 | AdMob Rewarded 광고 연동 | ✅ Android · iOS production (isTesting 유지) | 1회 + production ID 교체 | X |
+| 🟡 14 | 영상 고용량 처리 (Phase 1~4, 서버 미사용) | 🟨 Phase 1 진행 | 단계별 1회 | X |
 
 ---
 
@@ -587,6 +588,87 @@ TODO #12 2단계 — iOS 권한 문구 + 앱 아이콘 + 런치 스크린.
 - 실기에서 광고 한 번 노출 후 다운로드 정상 진행
 - AdMob 대시보드에 노출/클릭 카운트 도착
 - privacy.html이 광고 수집을 명시
+
+---
+
+## 🟡 14. 영상 고용량 처리 (Phase 1~4, 서버 미사용)
+
+- [ ] **상태**: Phase 1 진행 중 (2026-05-07~)
+
+**왜**: 현재 한도 1GB / 25분은 보수적. iPhone 4K 60fps 영상 (~180MB/분) 기준 5분 남짓이면 한계 근접. 5만 명 단계에선 사용자 불만 누적. 단, Phase 5(서버 처리)는 비용·privacy 이슈로 안 가기로 결정.
+
+**범위**: Phase 1~4까지. 결과적으로 4K @ 60fps · 1시간 영상까지 안정 처리, APK 크기는 +5~20MB(최종) 허용.
+
+### Phase 1 — 한도 상향 + 친근한 UX (1~2일, 무위험)
+
+- [x] 진행 중 (2026-05-07)
+
+`URL.createObjectURL(file)`은 파일 reference만 만들고 실제 메모리 점유는 시스템이 스트리밍으로 관리하므로, 단순 input 한도 상향만으로도 메모리 폭증 없음. 무거운 부분은 export(MP4 인코딩)인데 거긴 출력 캔버스(1080×1434) 크기에 비례하지 입력 영상 크기와 무관. 따라서 한도를 5GB까지 올려도 안전.
+
+**Claude Code 프롬프트**:
+```
+Phase 1 — 영상 한도 상향 + 친근 UX.
+- index.html의 MAX_VIDEO_SIZE_BYTES 1GB → 5GB
+- MAX_VIDEO_DURATION_S 25min → 60min
+- 큰 영상 진입 시 소프트 경고 (askConfirm):
+  - 1GB 초과 또는 30분 초과 시 "용량/길이가 큰 영상이에요.
+    처리에 1~2분 걸릴 수 있어요. 진행할까요?" 친근 톤, 진행/취소 선택
+- showAlert 거부 메시지는 새 한도(5GB / 60분) 반영
+- CLAUDE.md "Picker auto-load" 또는 신규 "Video limits" 섹션에 한도 + 소프트/하드 분리 정책 명시
+- HISTORY.md 한 줄
+```
+
+**완료 기준**:
+- 1.5GB / 35분 영상이 정상 import → 편집 → MP4 export 통과
+- 5GB / 60min 초과 시 친근 거부 popup
+- 1GB / 30min 초과 시 소프트 경고 popup → 진행 선택 가능
+
+### Phase 2 — Streams API + 메모리 hardening (3~5일, 중위험)
+
+- [ ] 미시작 (Phase 1 검증 후 시작)
+
+**범위**:
+- 썸네일 생성 시 hidden video element를 `seekTarget = 0.05s` 만 디코드하고 즉시 close
+- 비디오 export 도중 백그라운드 진입 감지 (`document.visibilitychange`) → 일시정지 + 토스트
+- MediaRecorder가 fail/timeout 나면 자동 재시도 (낮은 비트레이트로)
+- 메모리 압박 시 `low-memory` event (Chrome) 또는 `memorywarning` (iOS WKWebView) 핸들 → 진행 중이면 정중히 중단 안내
+
+**완료 기준**:
+- 4K 60fps 30분 영상 (~5GB) export 시 OOM 없이 완료
+- 백그라운드 진입 후 복귀해도 작업 재개 가능
+
+### Phase 3 — 네이티브 비디오 처리 플러그인 (1~2주, 큰 변화) 💡
+
+- [ ] 미시작 (Phase 2 검증 후 시작)
+
+**범위**: WebView의 MediaRecorder 의존 끊고 OS 네이티브 코덱 직접 호출.
+
+- iOS: AVFoundation (AVAsset, AVMutableComposition, AVAssetExportSession)
+- Android: MediaCodec + MediaMuxer
+- Capacitor 커스텀 플러그인 또는 검증된 커뮤니티 플러그인 (`@whiteguru/capacitor-video-trimmer` 등) 평가 후 채택
+
+**선결**:
+- iOS 빌드용 Mac 사용 가능
+- TODO #8 분기 회귀 테스트에 "네이티브 코덱 호환성" 행 추가
+
+**완료 기준**:
+- 4K 60fps · 1시간 영상 export 5분 → 30초로 단축 (HW 가속)
+- 에뮬레이터 호환성 이슈는 실기 테스트로 검증
+
+### Phase 4 — 네이티브 ffmpeg (선택, 5~7일)
+
+- [ ] 미시작 (Phase 3 부족할 때만)
+
+**범위**: ffmpeg.wasm CDN lazy 로드 → 네이티브 ffmpeg 바이너리로 교체.
+
+**부작용**:
+- APK +5~20MB (사용자가 50MB까지는 OK라고 결정함)
+- ffmpeg LGPL 라이선스 의무 (`docs/licenses.html`에 LGPL 풀 텍스트 + 소스 받을 권리 안내)
+- 보안 패치 follow-up 필요
+
+**완료 기준**:
+- ffmpeg 폴백 진입 시간 25MB 다운로드 → 0초 (이미 번들)
+- 4K transcode 속도 wasm 대비 10배+
 
 ---
 

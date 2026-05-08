@@ -1807,9 +1807,16 @@
 
     // Clip every selected video at the very start — length used as the final slot.
     const VIDEO_CLIP_SECONDS = 2;
-    // Hard limits applied before we even try to thumbnail a video.
-    const MAX_VIDEO_SIZE_BYTES = 1 * 1024 * 1024 * 1024; // 1 GB
-    const MAX_VIDEO_DURATION_S = 25 * 60; // 25 min
+    // Hard limits — the app rejects videos above these. Bumped in TODO #14
+    // Phase 1 because input itself is streamed (URL.createObjectURL doesn't
+    // copy the file), and export memory scales with the 1080×1434 output
+    // canvas, not the source size.
+    const MAX_VIDEO_SIZE_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB
+    const MAX_VIDEO_DURATION_S = 60 * 60; // 60 min
+    // Soft thresholds — the app shows a "큰 영상이라 시간 걸려요" askConfirm
+    // and proceeds only if the user agrees. Smaller than the hard limits.
+    const SOFT_VIDEO_SIZE_BYTES = 1 * 1024 * 1024 * 1024; // 1 GB
+    const SOFT_VIDEO_DURATION_S = 30 * 60; // 30 min
 
     // Format seconds as M:SS for the picker duration badge.
     const formatDuration = (seconds) => {
@@ -2192,10 +2199,21 @@
       let firstError = '';
       let oversized = 0;
       let toolong = 0;
+      let softWarned = false; // ask the user once per import even if multiple big files
       try {
         for (const f of files) {
           if (isVideoFile(f)) {
             if (f.size > MAX_VIDEO_SIZE_BYTES) { oversized++; continue; }
+            // Soft warning for big-but-allowed files (>1GB). Ask once per
+            // import — a user picking five 1.5GB clips shouldn't see five
+            // popups. Cancel here aborts the rest of the import too.
+            if (!softWarned && f.size > SOFT_VIDEO_SIZE_BYTES) {
+              loadingBarEl.setAttribute('hidden', '');
+              const ok = await askConfirm('와! 영상이 좀 크네요!📦\n처리에 1~2분 정도 걸려도 괜찮을까요?\n진행하면 잠깐만 기다려 주세요!⏳');
+              loadingBarEl.removeAttribute('hidden');
+              softWarned = true;
+              if (!ok) break;
+            }
             try {
               const { thumbUrl, originalUrl, duration } = await generateVideoThumbnail(f);
               if (duration && duration > MAX_VIDEO_DURATION_S) {
@@ -2203,6 +2221,17 @@
                 URL.revokeObjectURL(originalUrl);
                 toolong++;
                 continue;
+              }
+              if (duration && duration > SOFT_VIDEO_DURATION_S && !softWarned) {
+                loadingBarEl.setAttribute('hidden', '');
+                const ok = await askConfirm('와! 영상이 좀 기네요!⏰\n처리에 1~2분 정도 걸려도 괜찮을까요?\n진행하면 잠깐만 기다려 주세요!⏳');
+                loadingBarEl.removeAttribute('hidden');
+                softWarned = true;
+                if (!ok) {
+                  URL.revokeObjectURL(thumbUrl);
+                  URL.revokeObjectURL(originalUrl);
+                  break;
+                }
               }
               photos.push({ url: thumbUrl, originalUrl, name: f.name, type: 'video', duration });
             } catch (err) {
@@ -2232,10 +2261,10 @@
       }
 
       if (oversized) {
-        await showAlert('앗, 영상이 너무 커요!📦\n1GB가 넘는 영상은 핸드폰이 버거워해요.\n조금 더 작은 사이즈로 다시 시도해 주세요!🙏');
+        await showAlert('앗, 영상이 너무 커요!📦\n5GB가 넘는 영상은 핸드폰이 버거워해요.\n조금 더 작은 사이즈로 다시 시도해 주세요!🙏');
       }
       if (toolong) {
-        await showAlert('앗, 영상이 너무 길어요!⏰\n25분 이내 영상만 넣을 수 있어요.\n잠깐 잘라서 다시 와 주세요!✂️✨');
+        await showAlert('앗, 영상이 너무 길어요!⏰\n60분 이내 영상만 넣을 수 있어요.\n잠깐 잘라서 다시 와 주세요!✂️✨');
       }
       if (thumbFailures.length) {
         showToast(`썸네일 실패 ${thumbFailures.length}개 · ${firstError.slice(0, 40)}`);

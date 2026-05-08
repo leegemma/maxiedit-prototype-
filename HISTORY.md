@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-05-08 | (this commit) | 매거진느낌 피드 카드 썸네일을 `thum_feed_image01.png` → `thum_feed_image02.png` 로 교체. (이전 커밋에서 새 이미지 자산만 선반영했고 이번 커밋이 실제 src 변경) |
+| 2026-05-08 | (this commit) | `.home-badge` 패딩 `1px 6px` → `0 5px` 로 추가 컴팩트화. 칩 높이는 font-size 10 × line-height 1.4 = 14px 그대로 유지, 좌우만 더 타이트하게. |
+| 2026-05-08 | 9ec2a5b | 매거진느낌 피드 카드 썸네일을 `thum_feed_image01.png` → `thum_feed_image02.png` 로 교체. (이전 커밋에서 새 이미지 자산만 선반영했고 이번 커밋이 실제 src 변경) |
 | 2026-05-08 | f9b54a0 | `images/thum_feed_image02.png` 추가 (304 KB). 다른 머신에서 피드 카드 썸네일 교체 작업용 자산 선반영 |
 | 2026-05-08 | (prev) | 홈 배너 v4 마이크로 튜닝 — (1) `.home-badge` 내부 padding `2px 8px` → `1px 6px` (칩 컴팩트화), (2) `.home-card` flex `gap` 8px → `4px` (칩 ↔ 타이틀 간격 반감), (3) 섹션 간격 32px → **24px** (v=84 수준으로 복귀, 32px는 너무 벌어짐) |
 | 2026-05-08 | (prev) | 홈 배너 v3 — (a) `padding-bottom: 17px` + `justify-content: flex-end` 를 `.home-card.is-featured` → `.home-card` 기본으로 이동, 피드자르기·슬라이드피드 모두 하단 17px 고정. (b) **CSS 명시도 버그 수정**: `.home-section-title { margin: 0 0 12px }` shorthand가 `.home-section-title--inline { margin-top: 32px }` 를 silently override하던 문제. shorthand → `margin-bottom: 12px` longhand로 분리해 해결. 이제 v=88에서 안 벌어지던 32px 섹션 간격이 실제로 적용됨 |

@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-05-07 | (this commit) | Sortable.js 1.15.2 + html2canvas 1.4.1를 `lib/`에 로컬 번들로 전환. 회사망 SSL 인터셉션(Somansa 등)이 jsDelivr 응답 가로채서 SRI integrity 검증 실패 → html2canvas 미로드 → "이미지 생성에 실패했습니다" 토스트 발생하던 문제 해결. `sync:www`가 `cp -R lib www/lib` 추가. SRI integrity 속성 제거. CLAUDE.md "External dependencies" 갱신. TODO #1 SRI는 "대체됨"으로 표기 |
+| 2026-05-07 | (this commit) | 영상 거부 메시지를 `alert()` → `showAlert` 친근 팝업으로 전환 (광고 게이트와 같은 톤·이모지). `askConfirm`에 `alertMode` 옵션 추가해 cancel 버튼 숨김 + `showAlert` 헬퍼 신규. 1GB 초과 / 25분 초과 두 케이스 각각 친근 멘트 |
+| 2026-05-07 | 206993c | Sortable.js 1.15.2 + html2canvas 1.4.1를 `lib/`에 로컬 번들로 전환. 회사망 SSL 인터셉션(Somansa 등)이 jsDelivr 응답 가로채서 SRI integrity 검증 실패 → html2canvas 미로드 → "이미지 생성에 실패했습니다" 토스트 발생하던 문제 해결. `sync:www`가 `cp -R lib www/lib` 추가. SRI integrity 속성 제거. CLAUDE.md "External dependencies" 갱신. TODO #1 SRI는 "대체됨"으로 표기 |
 | 2026-05-07 | 5cd4ef5 | TODO #13 — iOS production AdMob ID 교체. App ID `ca-app-pub-1905722384577365~1537308520` (Info.plist), Rewarded `ca-app-pub-1905722384577365/6534639867` (index.html). 두 OS 모두 production. 상수 이름 `AD_REWARDED_TEST_*` → `AD_REWARDED_*`로 정리 (테스트 ID 단계 종료) |
 | 2026-05-07 | 0daee2c | TODO #13 — Android production AdMob ID 교체. App ID `ca-app-pub-1905722384577365~6675836555` (AndroidManifest.xml), Rewarded `ca-app-pub-1905722384577365/2431743322` (index.html). iOS는 아직 테스트 ID 유지. `isTesting: true` 유지 (Play Store 출시 직전 false 전환 예정) |
 | 2026-05-07 | f6722dd | TODO #13 — AdMob Rewarded 광고 도입 (테스트 ID). `@capacitor-community/admob` v6.2.0, AdMob 초기화 + iOS ATT 프롬프트, 다운로드 게이트 (1회 면제, 2회+부터 popup → 확인 → Rewarded 광고 → 보상으로 다운로드), `mxe_dl_count` localStorage 트래킹, `saveBlob` 안에서 카운트 증가. AndroidManifest.xml `APPLICATION_ID`, Info.plist `GADApplicationIdentifier`+ATT desc + SKAdNetworkItems 38개. `docs/privacy.html` 광고 데이터 수집 명시로 개정. CLAUDE.md "Ads (AdMob)" 섹션 신규. Production ID 교체는 사용자 작업으로 남음 |

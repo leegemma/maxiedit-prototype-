@@ -2231,8 +2231,12 @@
         loadingBarEl.setAttribute('hidden', '');
       }
 
-      if (oversized) alert('너무 영상이 커서 넣을 수 없습니다.');
-      if (toolong) alert('너무 긴 영상은 넣을 수 없습니다.');
+      if (oversized) {
+        await showAlert('앗, 영상이 너무 커요!📦\n1GB가 넘는 영상은 핸드폰이 버거워해요.\n조금 더 작은 사이즈로 다시 시도해 주세요!🙏');
+      }
+      if (toolong) {
+        await showAlert('앗, 영상이 너무 길어요!⏰\n25분 이내 영상만 넣을 수 있어요.\n잠깐 잘라서 다시 와 주세요!✂️✨');
+      }
       if (thumbFailures.length) {
         showToast(`썸네일 실패 ${thumbFailures.length}개 · ${firstError.slice(0, 40)}`);
       }
@@ -2335,11 +2339,15 @@
     const btnConfirmOk = document.getElementById('btn-confirm-ok');
     const btnConfirmCancel = document.getElementById('btn-confirm-cancel');
     let confirmResolver = null;
-    const askConfirm = (message) => {
+    const askConfirm = (message, opts = {}) => {
       confirmTextEl.textContent = message;
+      // alertMode = single OK, no Cancel. Used for friendly error popups
+      // (e.g. "video too big") that shouldn't offer a "Cancel" branch.
+      btnConfirmCancel.style.display = opts.alertMode ? 'none' : '';
       showModal(confirmModal);
       return new Promise((resolve) => { confirmResolver = resolve; });
     };
+    const showAlert = (message) => askConfirm(message, { alertMode: true });
     const settleConfirm = (result) => {
       hideModal(confirmModal);
       const r = confirmResolver;

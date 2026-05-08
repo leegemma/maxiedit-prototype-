@@ -1126,6 +1126,39 @@
       background: transparent;   /* no color — page background shows through margins */
     }
     .split-track::-webkit-scrollbar { display: none; }
+    /* Center flip button — perfectly round, 40% black bg, white icon.
+       Sits at the boundary between image and text panels (top of track
+       50px + half the 522px track height = 311px). z-index above the
+       split-slide so taps land on the button, not on .split-text. */
+    .btn-flip-center {
+      position: absolute;
+      top: calc(50px + 261px);
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.4);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      z-index: 5;
+      transition: opacity 0.15s, background-color 0.15s;
+    }
+    .btn-flip-center:active { background: rgba(0, 0, 0, 0.55); opacity: 0.85; }
+    .btn-flip-center svg {
+      width: 20px;
+      height: 20px;
+      stroke: #fff;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      display: block;
+    }
     .split-slide {
       flex: 0 0 100%;
       scroll-snap-align: start;
@@ -1191,6 +1224,46 @@
        indicator sits 24px below at top 596 on both pages. */
     #result-indicator,
     #single-indicator { top: 596px; }
+
+    /* 10_result tap hint — yellow CTA pill above the 3×3 grid that
+       gently bounces to draw the eye. Hidden once the user taps any
+       slot in the grid; reappears next time they enter the page. */
+    .result-tap-hint {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fffb8a;
+      color: #111;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 999px;
+      z-index: 5;
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      animation: result-tap-bounce 1.2s ease-in-out infinite;
+    }
+    .result-tap-hint::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 5px solid #fffb8a;
+    }
+    @keyframes result-tap-bounce {
+      0%, 100% { transform: translate(-50%, 0); }
+      50%      { transform: translate(-50%, -5px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .result-tap-hint { animation: none; }
+    }
     .indicator-dot {
       width: 5px;
       height: 5px;
@@ -1546,6 +1619,11 @@
         <div class="textarea" id="result-textarea"></div>
       </div>
 
+      <!-- First-touch hint: each grid slot is tappable and opens the
+           single-slide editor (12_single). Bouncing pill dismisses on
+           the first slot tap of the page entry. -->
+      <div class="result-tap-hint" id="result-tap-hint" hidden>슬롯을 탭해 편집해요</div>
+
       <div class="indicator" id="result-indicator"></div>
 
       <div class="result-controls">
@@ -1570,6 +1648,15 @@
 
       <div class="split-track" id="split-track"></div>
 
+      <!-- Center flip button: 40% black circle on the seam between image
+           and text panels of the visible split-slide. Same effect as
+           btn-flip below. -->
+      <button class="btn-flip-center" type="button" id="btn-flip-center" aria-label="뒤집기">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5"/>
+        </svg>
+      </button>
+
       <div class="indicator" id="single-indicator"></div>
 
       <div class="single-controls">
@@ -1578,7 +1665,7 @@
           <span>텍스트</span>
         </button>
         <button class="btn-flip" type="button" id="btn-flip" data-name="btn_flip">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5"/></svg>
           <span>뒤집기</span>
         </button>
       </div>
@@ -2380,6 +2467,11 @@
         if (photos.length === 0) {
           loadRecentPhotos().finally(() => buildPicker());
         }
+      }
+      if (name === 'result') {
+        // Show the bouncing tap hint on every entry; first slot tap hides it.
+        const hint = document.getElementById('result-tap-hint');
+        if (hint) hint.removeAttribute('hidden');
       }
     };
 
@@ -3312,10 +3404,12 @@
     }, { passive: true });
 
     btnSingleClose.addEventListener('click', () => goTo('result'));
-    btnFlip.addEventListener('click', () => {
+    const flipCurrentSlide = () => {
       const slide = splitTrack.children[currentSingleIdx];
       if (slide) slide.classList.toggle('is-flipped');
-    });
+    };
+    btnFlip.addEventListener('click', flipCurrentSlide);
+    document.getElementById('btn-flip-center').addEventListener('click', flipCurrentSlide);
     btnTextSingle.addEventListener('click', () => openTextedit(currentSingleIdx));
 
     // --- single-slide export helpers ---
@@ -3552,6 +3646,9 @@
 
     buildResultStyleGrid(previewGridEl);
     buildResultStyleGrid(resultGridEl, (slotIdx) => {
+      // First slot tap dismisses the bouncing hint.
+      const hint = document.getElementById('result-tap-hint');
+      if (hint) hint.setAttribute('hidden', '');
       // Only open single view when this slot has a photo/video.
       if (selected[slotIdx] !== undefined) openSingle(slotIdx);
     });

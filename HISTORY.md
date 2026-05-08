@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-05-08 | (this commit) | 팝업 텍스트 검수 — 4개 메시지 정정 (`되요` → `돼요` 한국어 표준 표기 2건, 카피 컴팩트화). `.confirm-card` 폭 280→300px (약간 넓혀 borderline 라인 wrap 방지). 변경 메시지: #2 1GB confirm / #3 30분 confirm (이모지·동사만 #2와 차별화) / #4 4GB reject / #17 광고 게이트 |
+| 2026-05-08 | (this commit) | (1) 뒤집기 아이콘 `arrows-right-left` → `arrows-up-down` (이미지·텍스트 상하 뒤집기 의미와 더 일치). (2) 12_single 분할 화면 가운데에 `.btn-flip-center` 신규 — 정원형 44px, 40% 검정 배경, 흰 아이콘. 이미지/텍스트 패널 경계 (top: 311px) 위에 떠 있어 탭 한 번에 현재 슬라이드 뒤집기. (3) 10_result 진입 시 노란 CTA 색 알림 pill `슬롯을 탭해 편집해요` 자동 노출 + 1.2s 통통튀는 bounce 애니메이션 + 화살표 캐럿. 첫 슬롯 탭으로 dismiss, 다음 진입 시 재노출. `prefers-reduced-motion` 시 애니메이션 멈춤 |
+| 2026-05-08 | (prev) | 팝업 텍스트 검수 — 4개 메시지 정정 (`되요` → `돼요` 한국어 표준 표기 2건, 카피 컴팩트화). `.confirm-card` 폭 280→300px (약간 넓혀 borderline 라인 wrap 방지). 변경 메시지: #2 1GB confirm / #3 30분 confirm (이모지·동사만 #2와 차별화) / #4 4GB reject / #17 광고 게이트 |
 | 2026-05-08 | (prev) | 컨텐트 시작 라인 `top: 69px` → **`50px`** 일괄 적용 (5곳: `.preview` / `.bottom-layer-imagelist` calc / `.result .full-image` / `.split-track` / 인디케이터 `615 → 596`). edit·result·single 세 페이지 모두 헤더와 컨텐트 사이 갭이 22→3px로 줄어 컨텐트가 더 위로 올라옴. picker grid는 ~19px 더 늘어난 영역 차지. CLAUDE.md 4곳 동시 갱신 |
 | 2026-05-08 | (prev) | 선택 썸네일의 순서 번호(`.thumb-num`) 위치 좌하단 → **좌상단** (`bottom: 2px` → `top: 2px`). 우상단의 빨간 X 삭제 버튼과 충돌 없음 |
 | 2026-05-08 | (prev) | 홈 메인 배너 카드 타이틀 "캐러셀" → **"3x3 그리드 캐러셀"** (풀 타이틀로 수정 — 직전 변경에서 첫 단어만 잘못 남겨둠) |

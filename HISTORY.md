@@ -6,7 +6,8 @@
 
 | 날짜 | 커밋 | 요약 |
 |---|---|---|
-| 2026-05-08 | (this commit) | 홈 배너 v4 마이크로 튜닝 — (1) `.home-badge` 내부 padding `2px 8px` → `1px 6px` (칩 컴팩트화), (2) `.home-card` flex `gap` 8px → `4px` (칩 ↔ 타이틀 간격 반감), (3) 섹션 간격 32px → **24px** (v=84 수준으로 복귀, 32px는 너무 벌어짐) |
+| 2026-05-08 | (this commit) | `images/thum_feed_image02.png` 추가 (304 KB). 다른 머신에서 피드 카드 썸네일 교체 작업용 자산 선반영 |
+| 2026-05-08 | (prev) | 홈 배너 v4 마이크로 튜닝 — (1) `.home-badge` 내부 padding `2px 8px` → `1px 6px` (칩 컴팩트화), (2) `.home-card` flex `gap` 8px → `4px` (칩 ↔ 타이틀 간격 반감), (3) 섹션 간격 32px → **24px** (v=84 수준으로 복귀, 32px는 너무 벌어짐) |
 | 2026-05-08 | (prev) | 홈 배너 v3 — (a) `padding-bottom: 17px` + `justify-content: flex-end` 를 `.home-card.is-featured` → `.home-card` 기본으로 이동, 피드자르기·슬라이드피드 모두 하단 17px 고정. (b) **CSS 명시도 버그 수정**: `.home-section-title { margin: 0 0 12px }` shorthand가 `.home-section-title--inline { margin-top: 32px }` 를 silently override하던 문제. shorthand → `margin-bottom: 12px` longhand로 분리해 해결. 이제 v=88에서 안 벌어지던 32px 섹션 간격이 실제로 적용됨 |
 | 2026-05-07 | (prev) | 홈 배너 폴리싱 v2 — (1) 섹션 간격 16px → **32px** 로 일관 적용 (`.home-section` margin-bottom + `.home-section-title--inline` margin-top 모두 32px). v=84 (24px)보다 더 넓혀 답답함 해소. (3) scrim 0.25 → **0.15** 로 추가 완화 — 매거진 썸네일 색감 살아남. CLAUDE.md scrim 규칙 15%로 갱신 |
 | 2026-05-07 | (prev) | 홈 배너 폴리싱 v1 — (1) "새로 나왔어요" ↔ "ig 피드 만들기" 섹션 간격 24→16px, (2) 매거진 배너의 타이틀·뉴 배지를 중앙 → 하단 17px 위로 (`is-featured`에 `justify-content: flex-end` + `padding-bottom: 17px`), (3) 배너 scrim 40% → 25% 로 연하게. CLAUDE.md "Thumbnail scrim" 규칙을 surface-별 opacity 가변으로 명시 |

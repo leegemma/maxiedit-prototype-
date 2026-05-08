@@ -47,7 +47,7 @@ Android Studio, Xcode, and CocoaPods all refuse to operate inside the iCloud + K
 
 ## Narrow device handling (option B)
 
-The base design is 393×852, but the on-screen frame uses `width: min(393px, 100vw)` so devices in the 320~440 range (iPhone SE, low-end Android) don't clip horizontally. Vertical dimensions stay fixed (`height: 522px`, indicator `top: 615`, split-track `top: 69`, etc.) — height responsiveness is out of scope here, planned for option C.
+The base design is 393×852, but the on-screen frame uses `width: min(393px, 100vw)` so devices in the 320~440 range (iPhone SE, low-end Android) don't clip horizontally. Vertical dimensions stay fixed (`height: 522px`, indicator `top: 596`, split-track `top: 50`, etc.) — height responsiveness is out of scope here, planned for option C.
 
 Concretely:
 - `:root` exposes `--frame-width: min(393px, 100vw)` so any layer that needs the unscaled frame width can read it.
@@ -82,7 +82,7 @@ The whole app sits inside `.app-frame` (393×852, capped at `100dvh` to track th
 Inside the edit page (top → bottom):
 
 1. **Header** (`.edit-header`, `z:4`, `top: 12`) — close-X icon button (`btn-edit-close`) and reset (`btn-reset-top`, RotateCcw + 초기화 label)
-2. **`preview`** (`z:1`, `top: 69`) — scaled-down `full_image` mirror at `--preview-scale: 0.4` via `transform: scale()` on a 393×522 inner inside a clipping viewport
+2. **`preview`** (`z:1`, `top: 50`) — scaled-down `full_image` mirror at `--preview-scale: 0.4` via `transform: scale()` on a 393×522 inner inside a clipping viewport
 3. **`bottom_layer_imageList`** (`z:2`, `top: calc(69px + 522px*0.4)` ≈ 277.8) — category tabs + picker grid. Picker grid uses `grid-template-columns: repeat(3, 1fr)` + `grid-auto-rows: calc((var(--frame-width) - 8px) / 3)` for square cells. Don't rely on `aspect-ratio` alone (flaky in grid) and don't use `100%` in `grid-auto-rows` (resolves to container height per CSS spec — produces non-square cells on iOS Safari). Empty state (`.picker-empty`) is `position: absolute; inset: 0` overlaying the grid so it never participates in row sizing.
 4. **`bottom_layer_select`** (`z:3`, `bottom: 0`) — sticky bottom bar. Exactly 4 thumbs visible (`flex: 0 0 248px` = 4×56 + 3×8 gap); 5th+ scroll horizontally with snap. Long-press reorders via Sortable.js (`delay: 300`). Slides up on entry via `bls-slide-up` keyframe with `cubic-bezier(0.22, 0.9, 0.3, 1)` for an iOS-like inertial feel; `goTo('edit')` toggles `.is-entering` with a forced reflow so it replays on every re-entry.
 
@@ -99,14 +99,14 @@ When adding derived UI, plug into the matching renderer — don't add a fourth s
 ### Shared `full_image` component
 
 The 3×3 color-slot grid + textarea legend is rendered identically in two places:
-- `10_result` — full 393×522 size, positioned absolute at `top: 69`
+- `10_result` — full 393×522 size, positioned absolute at `top: 50`
 - `02_edit` preview — same DOM structure inside `.preview-viewport`, scaled via CSS transform
 
 `buildResultStyleGrid(target, onCellClick?)` populates both grids; `renderGridSlots(gridEl, { animateVideos })` syncs their colors/opacity to `selected[]`. The result grid passes `animateVideos: true` so video slots get a live `<video autoplay loop muted playsinline>` element capped at `VIDEO_CLIP_SECONDS` (currently 4). When editing grid visuals, change in one place.
 
 ### `12_result_single` (split view)
 
-A horizontal scroll-snap track (`#split-track`) holding one `.split-slide` per selected slot. The track is sized **identically to `10_result`'s `.full-image`**: `top: 69px; height: 522px` so the visible preview area is exactly 393×522 on both pages and the indicator (`top: 615px`) lands 24px below either content area.
+A horizontal scroll-snap track (`#split-track`) holding one `.split-slide` per selected slot. The track is sized **identically to `10_result`'s `.full-image`**: `top: 50px; height: 522px` so the visible preview area is exactly 393×522 on both pages and the indicator (`top: 596px`) lands 24px below either content area.
 
 Each `.split-slide` is full-width (`flex: 0 0 100%`) and split 5:5:
 

@@ -572,7 +572,7 @@
     /* preview (full_image scaled, aspect ratio preserved) */
     .preview {
       position: absolute;
-      top: 69px;
+      top: 50px;
       left: 0;
       right: 0;
       height: calc(522px * var(--preview-scale));
@@ -604,7 +604,7 @@
     /* bottom_layer_imageList — tabs + picker grid */
     .bottom-layer-imagelist {
       position: absolute;
-      top: calc(69px + 522px * var(--preview-scale));
+      top: calc(50px + 522px * var(--preview-scale));
       left: 0;
       right: 0;
       bottom: 0;
@@ -1007,7 +1007,7 @@
     }
     .result .full-image {
       position: absolute;
-      top: 69px;
+      top: 50px;
       left: 0;
     }
     .result-grid {
@@ -1112,7 +1112,7 @@
     .single { position: relative; width: 100%; height: 100%; background: #000; overflow: hidden; color: #fff; }
     .split-track {
       position: absolute;
-      top: 69px;                 /* matches 10_result .full-image top */
+      top: 50px;                 /* matches 10_result .full-image top */
       left: 0;
       right: 0;
       height: 522px;             /* matches 10_result .full-image height */
@@ -1187,10 +1187,10 @@
       gap: 6px;
     }
     .indicator:empty { display: none; }
-    /* Both 10_result .full-image and 12_single .split-track end at top 69+522=591;
-       indicator sits 24px below at top 615 on both pages. */
+    /* Both 10_result .full-image and 12_single .split-track end at top 50+522=572;
+       indicator sits 24px below at top 596 on both pages. */
     #result-indicator,
-    #single-indicator { top: 615px; }
+    #single-indicator { top: 596px; }
     .indicator-dot {
       width: 5px;
       height: 5px;

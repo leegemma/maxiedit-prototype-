@@ -1372,6 +1372,15 @@
     .home-tab-track {
       position: relative;
       overflow: hidden;
+      /* CRITICAL: #page-home is `display: flex; flex-direction: column`, so
+         every direct child defaults to `flex-shrink: 1` and would compress
+         when total content height exceeds the page height. Combined with
+         this `overflow: hidden`, that compression silently clipped the
+         tail cards (e.g. "슬라이드 피드") AND killed scrolling — the page
+         thought its flex children fit. flex-shrink: 0 forces the track to
+         keep its natural content height so #page-home's overflow-y: auto
+         can scroll past it. */
+      flex-shrink: 0;
       /* No width / margin / padding tricks — let the track stretch naturally
          to #page-home's content-box (page width minus 20px page padding each
          side). The original margin: 0 -20 + padding: 0 20 trick was meant to

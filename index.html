@@ -179,7 +179,12 @@
       font-size: 17px;
       font-weight: 700;
       color: #fff;
-      margin: 0 0 12px;
+      /* IMPORTANT: longhand only. Switching to shorthand `margin: 0 0 12px;`
+         would reset margin-top to 0 and silently override the
+         `.home-section-title--inline` rule above (same specificity, source
+         order wins) — that bug used to make the inline title sit flush
+         against the previous card. Keep margin-top untouched here. */
+      margin-bottom: 12px;
     }
     .home-card {
       position: relative;
@@ -191,11 +196,14 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      /* Title + badge anchored 17px from the bottom of every banner —
+         applies to is-featured (매거진) AND is-disabled (피드자르기 /
+         슬라이드 피드). */
+      justify-content: flex-end;
+      padding: 0 0 17px;
       gap: 8px;
       cursor: pointer;
       font-family: inherit;
-      padding: 0;
     }
     /* Card thumbnail: fills the card and uses object-fit: contain so the
        entire image is visible — vertical letterbox (if any) shows the
@@ -231,11 +239,6 @@
     .home-card.is-featured {
       background: #8D9B4D;
       color: #fff;
-      /* Hero banner: title + badge anchored to the bottom (17px from edge)
-         instead of vertically centered. Other home cards (is-disabled)
-         keep the default centered layout. */
-      justify-content: flex-end;
-      padding-bottom: 17px;
     }
     .home-card.is-featured:active { opacity: 0.9; }
     .home-card.is-disabled {

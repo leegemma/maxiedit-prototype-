@@ -167,13 +167,12 @@
       background: #fff;
       color: #111;
     }
-    /* Section spacing — consistent 32px between any home block (wider than the
-       earlier 24px / 16px iterations; v=84 had 24px and felt cramped). Applies
-       to both real section breaks AND the inline title that appears inside a
+    /* Section spacing — consistent 24px between any home block. Applies to
+       both real section breaks AND the inline title that appears inside a
        single section (home tab combines hero + ig 피드 만들기 sub-block). */
-    .home-section { margin: 0 0 32px; }
+    .home-section { margin: 0 0 24px; }
     .home-section + .home-section { margin-top: 4px; }
-    .home-section-title--inline { margin-top: 32px; }
+    .home-section-title--inline { margin-top: 24px; }
     .home-section-title {
       font-family: inherit;
       font-size: 17px;
@@ -201,7 +200,7 @@
          슬라이드 피드). */
       justify-content: flex-end;
       padding: 0 0 17px;
-      gap: 8px;
+      gap: 4px;
       cursor: pointer;
       font-family: inherit;
     }
@@ -253,7 +252,7 @@
     }
     .home-badge {
       display: inline-block;
-      padding: 2px 8px;
+      padding: 1px 6px;
       border-radius: 4px;
       font-size: 10px;
       font-weight: 700;

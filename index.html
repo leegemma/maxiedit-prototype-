@@ -1499,6 +1499,43 @@
       100% { transform: scale(1); }
     }
     .home-card--pulse { animation: card-pulse 0.32s var(--ease-out-soft); }
+
+    /* ─── Full-image resize test modes ──────────────────────────────────
+       Activated by ?test=a or ?test=b on the URL. Both target a 331×440
+       full-image (vs the default 393×522). Approach A scales the
+       original layout via CSS transform (no internal pixel changes);
+       approach B explicitly recomputes the magic numbers. .split-track
+       in 12_single just shrinks its height — the inner panels are
+       already flex-based and adapt automatically. */
+    .test-a .result .full-image {
+      transform: scale(0.842);
+      transform-origin: top center;
+    }
+    .test-a .split-track { height: 440px; }
+    .test-a #result-indicator,
+    .test-a #single-indicator { top: 514px; }
+
+    .test-b .result .full-image {
+      width: 331px;
+      height: 440px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .test-b .result-grid { top: 13px; gap: 26px; }
+    .test-b .result-row { padding: 0 13px; }
+    .test-b .p-section { height: 72px; }
+    .test-b .result-cell { gap: 4px; }
+    .test-b .photo-title { font-size: 8px; }
+    .test-b .textarea {
+      top: 377px;
+      left: 11px;
+      gap: 14px;
+      font-size: 7px;
+    }
+    .test-b .textarea p { line-height: 9px; }
+    .test-b .split-track { height: 440px; }
+    .test-b #result-indicator,
+    .test-b #single-indicator { top: 514px; }
   </style>
 </head>
 <body>
@@ -1724,6 +1761,15 @@
   </div><!-- /.app-frame -->
 
   <script>
+    // Full-image resize test mode: ?test=a or ?test=b on the URL adds
+    // .test-a or .test-b to <html> so the matching CSS overrides apply.
+    // Default (no ?test) leaves the layout untouched.
+    (() => {
+      const m = new URLSearchParams(location.search).get('test');
+      if (m === 'a') document.documentElement.classList.add('test-a');
+      else if (m === 'b') document.documentElement.classList.add('test-b');
+    })();
+
     // Global error handlers — TODO #4 stage 1.
     // Currently just console.error so issues surface during development.
     // When Sentry (or any other reporter) is wired in (stage 2), hook it

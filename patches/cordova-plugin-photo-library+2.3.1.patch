@@ -1,3 +1,20 @@
+diff --git a/node_modules/cordova-plugin-photo-library/src/android/PhotoLibrary.java b/node_modules/cordova-plugin-photo-library/src/android/PhotoLibrary.java
+index 8d1153e..59338c1 100644
+--- a/node_modules/cordova-plugin-photo-library/src/android/PhotoLibrary.java
++++ b/node_modules/cordova-plugin-photo-library/src/android/PhotoLibrary.java
+@@ -209,7 +209,11 @@ public class PhotoLibrary extends CordovaPlugin {
+               service.saveImage(getContext(), cordova, url, album, new PhotoLibraryService.JSONObjectRunnable() {
+                 @Override
+                 public void run(JSONObject result) {
+-                  callbackContext.success(result);
++                  // null can come back when MediaStore re-query yields 0 or >1 rows
++                  // for the just-scanned file — treat as success with empty payload
++                  // instead of crashing in PluginResult constructor.
++                  if (result != null) callbackContext.success(result);
++                  else callbackContext.success(new JSONObject());
+                 }
+               });
+ 
 diff --git a/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibrary.swift b/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibrary.swift
 index 04a6b5e..8aca976 100644
 --- a/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibrary.swift

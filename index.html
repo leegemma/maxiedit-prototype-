@@ -1237,16 +1237,20 @@
     #result-indicator,
     #single-indicator { top: 514px; }
 
-    /* 10_result tap hint — yellow CTA pill above the 3×3 grid that
-       gently bounces to draw the eye. Hidden once the user taps any
-       slot in the grid; reappears next time they enter the page. */
+    /* 10_result tap hint — black pill positioned above the FIRST slot
+       (top-left in the 3×3 grid), gently bounces to draw the eye. The
+       first photo's visual center sits at x≈95 in the 393-wide frame:
+       full-image is 331 wide centered (left edge x=31), grid row has
+       15px padding, first cell width ≈121 design × 0.842 scale ≈102.
+       Caret tip lands just above the photo's top (y≈63). */
     .result-tap-hint {
       position: absolute;
-      top: 60px;
-      left: 50%;
+      top: 30px;
+      left: 95px;
       transform: translateX(-50%);
-      background: #fffb8a;
-      color: #111;
+      background: #000;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.22);
       font-size: 12px;
       font-weight: 600;
       padding: 6px 12px;
@@ -1267,7 +1271,7 @@
       height: 0;
       border-left: 5px solid transparent;
       border-right: 5px solid transparent;
-      border-top: 5px solid #fffb8a;
+      border-top: 5px solid #000;
     }
     @keyframes result-tap-bounce {
       0%, 100% { transform: translate(-50%, 0); }
@@ -1331,6 +1335,64 @@
       stroke-linejoin: round;
       fill: none;
     }
+
+    /* progress modal — text + bar + cancel for slow operations
+       (video import, PNG/MP4 capture and save). Card-style overlay
+       matches the existing confirm/download modal pattern; the bar fill
+       transitions smoothly so updateProgress(pct) calls don't snap. */
+    .progress-card {
+      width: 280px;
+      max-width: 80vw;
+      background: #fff;
+      border-radius: 12px;
+      padding: 22px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+      transform: scale(0.96);
+      transition: transform var(--dur-base) var(--ease-out-soft);
+    }
+    .modal.is-open .progress-card { transform: scale(1); }
+    .progress-text {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.45;
+      color: #111;
+      text-align: center;
+      margin: 0;
+      white-space: pre-line;
+    }
+    .progress-bar {
+      height: 5px;
+      background: rgba(0, 0, 0, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: #fffb8a;
+      border-radius: 999px;
+      transition: width 0.18s ease;
+    }
+    .btn-progress-cancel {
+      height: 40px;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      background: transparent;
+      color: #111;
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 400;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: opacity 0.15s, background-color 0.15s;
+    }
+    .btn-progress-cancel:hover { background: rgba(0, 0, 0, 0.04); }
+    .btn-progress-cancel:active { opacity: 0.78; }
 
     /* loading bar — shown during photo/video processing */
     .loading-bar {
@@ -1725,6 +1787,14 @@
       </div>
     </div>
   </div>
+  <!-- progress modal — shown during video import + PNG/MP4 save -->
+  <div class="modal" id="progress-modal" role="dialog" aria-modal="true" aria-labelledby="progress-text" hidden>
+    <div class="progress-card">
+      <p class="progress-text" id="progress-text">처리 중…</p>
+      <div class="progress-bar"><div class="progress-bar-fill" id="progress-bar-fill"></div></div>
+      <button class="btn-progress-cancel" type="button" id="btn-progress-cancel">취소</button>
+    </div>
+  </div>
   <div class="loading-bar" id="loading-bar" hidden></div>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden>
     <svg class="toast-check" viewBox="0 0 24 24" aria-hidden="true">
@@ -2063,6 +2133,46 @@
     const toastEl = document.getElementById('toast');
     const toastTextEl = document.getElementById('toast-text');
     const loadingBarEl = document.getElementById('loading-bar');
+    // Progress modal — text + determinate bar + cancel button. Used for slow
+    // operations (video import, PNG/MP4 capture and save) where users want
+    // to see "how long" and have an out. Cancel sets `progressCancelled`;
+    // long-running loops/timers must check this flag to actually bail out.
+    const progressModal = document.getElementById('progress-modal');
+    const progressTextEl = document.getElementById('progress-text');
+    const progressBarFillEl = document.getElementById('progress-bar-fill');
+    const btnProgressCancel = document.getElementById('btn-progress-cancel');
+    let progressCancelled = false;
+    let progressOnCancel = null;
+    const showProgress = ({ text = '처리 중…', cancellable = true, onCancel = null } = {}) => {
+      progressTextEl.textContent = text;
+      progressBarFillEl.style.transition = 'none';
+      progressBarFillEl.style.width = '0%';
+      // Force reflow so the next width change animates from 0%, not the
+      // previous run's leftover value.
+      void progressBarFillEl.offsetWidth;
+      progressBarFillEl.style.transition = '';
+      btnProgressCancel.style.display = cancellable ? '' : 'none';
+      progressCancelled = false;
+      progressOnCancel = onCancel;
+      showModal(progressModal);
+    };
+    const updateProgress = (pct, text) => {
+      const p = Math.max(0, Math.min(100, pct));
+      progressBarFillEl.style.width = `${p}%`;
+      if (text != null) progressTextEl.textContent = text;
+    };
+    const hideProgress = () => {
+      progressOnCancel = null;
+      hideModal(progressModal);
+    };
+    btnProgressCancel.addEventListener('click', () => {
+      progressCancelled = true;
+      const cb = progressOnCancel;
+      progressOnCancel = null;
+      if (cb) try { cb(); } catch (e) { console.warn('progress cancel handler threw', e); }
+      // Don't auto-hide here — let the in-flight operation observe
+      // progressCancelled, finish its cleanup, and call hideProgress().
+    });
     const btnTextTool = document.getElementById('btn-text-tool');
     const btnTexteditCancel = document.getElementById('btn-textedit-cancel');
     const btnTexteditConfirm = document.getElementById('btn-textedit-confirm');
@@ -2323,23 +2433,36 @@
         selected.length = 0;
       }
 
-      loadingBarEl.removeAttribute('hidden');
+      // Show the determinate progress modal only when the batch contains
+      // videos (those take noticeable time to thumbnail-extract). Pure-image
+      // imports finish in milliseconds, so the brief loading bar is enough.
+      const hasVideoInBatch = Array.from(files).some(isVideoFile);
+      const importMsg = (i, total) => `동영상 가져오는 중...(${Math.round((i / total) * 100)}%)`;
+      if (hasVideoInBatch) {
+        showProgress({ text: importMsg(0, files.length), cancellable: true });
+      } else {
+        loadingBarEl.removeAttribute('hidden');
+      }
       let thumbFailures = [];
       let firstError = '';
       let oversized = 0;
       let toolong = 0;
       let softWarned = false; // ask the user once per import even if multiple big files
       try {
-        for (const f of files) {
+        for (let fi = 0; fi < files.length; fi++) {
+          if (progressCancelled) break;
+          const f = files[fi];
           if (isVideoFile(f)) {
             if (f.size > MAX_VIDEO_SIZE_BYTES) { oversized++; continue; }
             // Soft warning for big-but-allowed files (>1GB). Ask once per
             // import — a user picking five 1.5GB clips shouldn't see five
             // popups. Cancel here aborts the rest of the import too.
             if (!softWarned && f.size > SOFT_VIDEO_SIZE_BYTES) {
-              loadingBarEl.setAttribute('hidden', '');
+              if (hasVideoInBatch) hideProgress();
+              else loadingBarEl.setAttribute('hidden', '');
               const ok = await askConfirm('엇! 영상이 좀 크네요!📦\n처리에 1~2분 정도 소요돼요.\n잠깐만 기다려 주세요!⏳');
-              loadingBarEl.removeAttribute('hidden');
+              if (hasVideoInBatch) showProgress({ text: importMsg(fi, files.length), cancellable: true });
+              else loadingBarEl.removeAttribute('hidden');
               softWarned = true;
               if (!ok) break;
             }
@@ -2352,9 +2475,11 @@
                 continue;
               }
               if (duration && duration > SOFT_VIDEO_DURATION_S && !softWarned) {
-                loadingBarEl.setAttribute('hidden', '');
+                if (hasVideoInBatch) hideProgress();
+                else loadingBarEl.setAttribute('hidden', '');
                 const ok = await askConfirm('엇! 영상이 좀 기네요!⏰\n처리에 1~2분 정도 소요돼요.\n잠깐만 기다려 주세요!⏳');
-                loadingBarEl.removeAttribute('hidden');
+                if (hasVideoInBatch) showProgress({ text: importMsg(fi, files.length), cancellable: true });
+                else loadingBarEl.removeAttribute('hidden');
                 softWarned = true;
                 if (!ok) {
                   URL.revokeObjectURL(thumbUrl);
@@ -2384,9 +2509,11 @@
           } else {
             console.warn('skipped file of unsupported type', f.name, f.type);
           }
+          if (hasVideoInBatch) updateProgress(((fi + 1) / files.length) * 100, importMsg(fi + 1, files.length));
         }
       } finally {
-        loadingBarEl.setAttribute('hidden', '');
+        if (hasVideoInBatch) hideProgress();
+        else loadingBarEl.setAttribute('hidden', '');
       }
 
       if (oversized) {
@@ -3061,17 +3188,29 @@
 
     const downloadPng = async () => {
       btnDownload.disabled = true;
-      loadingBarEl.removeAttribute('hidden');
       setDownloadingState(true);
+      // Skip our own modal when nested inside downloadAllContent — the
+      // wrapper drives a single overarching progress UI instead. depth=1
+      // means top-level entry; depth=2 means we were called from the
+      // wrapper's already-active session.
+      const showOwnProgress = downloadDepth <= 1;
+      // html2canvas has no progress events, so we drive the bar in phases:
+      // capture pass (slow, ~1-2s) → save (fast). The modal still gives the
+      // user a clear "in progress" signal + cancel out before save.
+      if (showOwnProgress) showProgress({ text: '사진 저장중 (0%)', cancellable: true });
       try {
+        if (showOwnProgress) updateProgress(15, '사진 저장중 (15%)');
         const blob = await capturePng();
+        if (showOwnProgress && progressCancelled) { hideProgress(); return; }
+        if (showOwnProgress) updateProgress(70, '사진 저장중 (70%)');
         const ok = await saveBlob(blob, `maxiedit_${tsNow()}.png`);
+        if (showOwnProgress) { updateProgress(100, '사진 저장중 (100%)'); hideProgress(); }
         if (ok) showToast('저장 완료');
       } catch (err) {
         console.error(err);
+        if (showOwnProgress) hideProgress();
         alert('이미지 생성에 실패했습니다.');
       } finally {
-        loadingBarEl.setAttribute('hidden', '');
         btnDownload.disabled = false;
         setDownloadingState(false);
       }
@@ -3099,24 +3238,39 @@
 
     const downloadMp4 = async () => {
       btnDownload.disabled = true;
-      loadingBarEl.removeAttribute('hidden');
       setDownloadingState(true);
+      const showOwnProgress = downloadDepth <= 1;
+      // MediaRecorder runs for VIDEO_CLIP_SECONDS so we can drive the bar
+      // off elapsed time (capped at 90% to leave headroom for transcode +
+      // save phases).
+      if (showOwnProgress) showProgress({ text: '영상 저장중 (0%)', cancellable: true });
+      const startedAt = performance.now();
+      const tickInterval = showOwnProgress ? setInterval(() => {
+        const elapsed = (performance.now() - startedAt) / 1000;
+        const pct = Math.min(90, (elapsed / VIDEO_CLIP_SECONDS) * 90);
+        updateProgress(pct, `영상 저장중 (${Math.round(pct)}%)`);
+      }, 100) : null;
       try {
         const { blob, mime } = await captureMp4WithRetry();
+        if (tickInterval) clearInterval(tickInterval);
+        if (showOwnProgress && progressCancelled) { hideProgress(); return; }
         let finalBlob = blob;
         // Force an actual MP4 container. If MediaRecorder already gave us mp4
         // we pass through; otherwise transcode via ffmpeg.wasm.
         if (!mime || !mime.startsWith('video/mp4')) {
-          showToast('MP4 변환 중…');
+          if (showOwnProgress) updateProgress(92, 'MP4 변환 중 (92%)');
           finalBlob = await transcodeToMp4(blob, mime);
         }
+        if (showOwnProgress) updateProgress(96, '영상 저장중 (96%)');
         const ok = await saveBlob(finalBlob, `maxiedit_${tsNow()}.mp4`);
+        if (showOwnProgress) { updateProgress(100, '영상 저장중 (100%)'); hideProgress(); }
         if (ok) showToast('저장 완료');
       } catch (err) {
+        if (tickInterval) clearInterval(tickInterval);
         console.error(err);
+        if (showOwnProgress) hideProgress();
         alert('영상 생성에 실패했습니다.\n' + (err.message || err));
       } finally {
-        loadingBarEl.setAttribute('hidden', '');
         btnDownload.disabled = false;
         setDownloadingState(false);
       }
@@ -3175,12 +3329,26 @@
       if (selected.length === 0) return;
       const anyVideo = selected.some((i) => photos[i] && photos[i].type === 'video');
       setDownloadingState(true);
+      // 1 full result + N single slides = total steps. Step 0 is the full
+      // result, steps 1..N are individual slides. Wrapper shows its own
+      // overarching progress; nested downloadPng/Mp4 + downloadSinglePng/Mp4
+      // skip their own modal because downloadDepth > 1 inside this scope.
+      const totalSteps = 1 + selected.length;
+      const stepLabel = (step) => step === 0 ? '전체 저장중' : `슬라이드 ${step} / ${selected.length} 저장중`;
+      const updateAll = (step) => {
+        const pct = Math.round((step / totalSteps) * 100);
+        updateProgress(pct, `${stepLabel(step)} (${pct}%)`);
+      };
+      showProgress({ text: '전체 저장중 (0%)', cancellable: true });
       try {
         try {
           if (anyVideo) await downloadMp4();
           else await downloadPng();
         } catch (err) { console.warn('full save failed', err); }
+        if (progressCancelled) { hideProgress(); return; }
+        updateAll(1);
         for (let i = 0; i < selected.length; i++) {
+          if (progressCancelled) break;
           const photoIdx = selected[i];
           const slotIsVideo = photos[photoIdx] && photos[photoIdx].type === 'video';
           currentSingleIdx = i;
@@ -3188,8 +3356,10 @@
             if (slotIsVideo) await downloadSingleMp4();
             else await downloadSinglePng();
           } catch (err) { console.warn(`slide ${i} save failed`, err); }
+          updateAll(i + 2); // +1 for the full-result step, +1 for 1-based step
         }
-        showToast('전체 저장 완료');
+        hideProgress();
+        if (!progressCancelled) showToast('전체 저장 완료');
       } finally {
         setDownloadingState(false);
       }
@@ -3532,10 +3702,15 @@
     // viewport margin from the output, as requested.
     const downloadSinglePng = async () => {
       btnSingleDownload.disabled = true;
-      loadingBarEl.removeAttribute('hidden');
       setDownloadingState(true);
+      // Don't show progress modal when this is part of downloadAllContent —
+      // that wrapper drives its own slide-counter progress. Detect via the
+      // depth flag the wrapper sets (downloadDepth > 1 means we're nested).
+      const showOwnProgress = downloadDepth <= 1;
+      if (showOwnProgress) showProgress({ text: '사진 저장중 (0%)', cancellable: true });
       try {
         if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        if (showOwnProgress) updateProgress(20, '사진 저장중 (20%)');
         const slide = await prepareSingleSlideForExport();
         const canvas = document.createElement('canvas');
         canvas.width = SINGLE_OUT_W;
@@ -3545,16 +3720,20 @@
         await new Promise((r) => requestAnimationFrame(r));
         drawSingleFrame(ctx, canvas.width, canvas.height, slide);
         slide.cleanup();
+        if (showOwnProgress) updateProgress(60, '사진 저장중 (60%)');
         const blob = await new Promise((res, rej) => {
           canvas.toBlob((b) => b ? res(b) : rej(new Error('toBlob failed')), 'image/png');
         });
+        if (showOwnProgress && progressCancelled) { hideProgress(); return; }
+        if (showOwnProgress) updateProgress(85, '사진 저장중 (85%)');
         const ok = await saveBlob(blob, `maxiedit_single_${tsNow()}.png`);
+        if (showOwnProgress) { updateProgress(100, '사진 저장중 (100%)'); hideProgress(); }
         if (ok) showToast('저장 완료');
       } catch (err) {
         console.error(err);
+        if (showOwnProgress) hideProgress();
         alert('이미지 생성에 실패했습니다.\n' + (err.message || err));
       } finally {
-        loadingBarEl.setAttribute('hidden', '');
         btnSingleDownload.disabled = false;
         setDownloadingState(false);
       }
@@ -3564,8 +3743,10 @@
     // MediaRecorder, transcode to mp4 if native path isn't mp4.
     const downloadSingleMp4 = async () => {
       btnSingleDownload.disabled = true;
-      loadingBarEl.removeAttribute('hidden');
       setDownloadingState(true);
+      const showOwnProgress = downloadDepth <= 1;
+      if (showOwnProgress) showProgress({ text: '영상 저장중 (0%)', cancellable: true });
+      let tickInterval = null;
       try {
         if (typeof MediaRecorder === 'undefined' || !HTMLCanvasElement.prototype.captureStream) {
           throw new Error('MediaRecorder not supported');
@@ -3590,6 +3771,12 @@
         const detachVisibilityGuard = guardRecorderVisibility(recorder);
         recorder.start();
         const startT = performance.now();
+        if (showOwnProgress) {
+          tickInterval = setInterval(() => {
+            const pct = Math.min(85, ((performance.now() - startT) / 1000 / VIDEO_CLIP_SECONDS) * 85);
+            updateProgress(pct, `영상 저장중 (${Math.round(pct)}%)`);
+          }, 100);
+        }
 
         const rawBlob = await new Promise((resolve, reject) => {
           recorder.onerror = (e) => { detachVisibilityGuard(); slide.cleanup(); reject(new Error('recorder')); };
@@ -3605,19 +3792,24 @@
           };
           requestAnimationFrame(draw);
         });
+        if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }
+        if (showOwnProgress && progressCancelled) { hideProgress(); return; }
 
         let finalBlob = rawBlob;
         if (!mime.startsWith('video/mp4')) {
-          showToast('MP4 변환 중…');
+          if (showOwnProgress) updateProgress(90, 'MP4 변환 중 (90%)');
           finalBlob = await transcodeToMp4(rawBlob, mime);
         }
+        if (showOwnProgress) updateProgress(95, '영상 저장중 (95%)');
         const ok = await saveBlob(finalBlob, `maxiedit_single_${tsNow()}.mp4`);
+        if (showOwnProgress) { updateProgress(100, '영상 저장중 (100%)'); hideProgress(); }
         if (ok) showToast('저장 완료');
       } catch (err) {
+        if (tickInterval) clearInterval(tickInterval);
         console.error(err);
+        if (showOwnProgress) hideProgress();
         alert('영상 생성에 실패했습니다.\n' + (err.message || err));
       } finally {
-        loadingBarEl.setAttribute('hidden', '');
         btnSingleDownload.disabled = false;
         setDownloadingState(false);
       }

@@ -221,6 +221,10 @@ Required iOS plumbing (already wired):
 
 The `"+"` tile at the end of the grid still opens the OS file picker so the user can append photos manually; new picks append to the same `photos[]`.
 
+**Video support in the device library**: `cordova-plugin-photo-library` v2.3.1 (last published 2022) only queries `MediaStore.Images.Media` on Android — its documented `includeVideos: true` option is implemented for iOS but a no-op on Android. The patch in [patches/cordova-plugin-photo-library+2.3.1.patch](patches/cordova-plugin-photo-library+2.3.1.patch) adds a second `MediaStore.Video.Media` query in `queryLibrary`, merge-sorts the union by `DATE_TAKEN` desc, and routes video files through `ThumbnailUtils.createVideoThumbnail` in `getThumbnail` instead of trying to decode them as bitmaps. `mimeType` and `duration` (ms on Android, normalized to seconds in JS) are also added to the returned columns. With this patch on, the picker shows photos and videos interleaved by date on first load. iOS already supports `includeVideos` natively, so the patch is Android-only.
+
+**Category-tab filter**: `.cat-tab` clicks set `pickerFilter` ('all' or 'video') and re-render the picker. Only 최근항목 (all) and Video are wired today; the rest (즐겨찾기, 셀피, Live Photo, 파노라마, 고속 연사 촬영, 스크린샷, 움직이는 항목, RAW, 최근 저장된 항목) fall through to 'all' because the photoLibrary plugin doesn't surface the metadata needed to drive them (favorites flag, panorama detection, screenshot bucket id, RAW MIME, etc.). When the filtered list is empty, the picker shows a tap-to-add empty state that opens the file picker with `accept` scoped to the active filter (image+video or video-only).
+
 ## Error handling
 
 A pair of global handlers sits at the top of `index.html`'s main `<script>`:

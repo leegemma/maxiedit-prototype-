@@ -15,8 +15,116 @@ index 8d1153e..59338c1 100644
                  }
                });
  
+diff --git a/node_modules/cordova-plugin-photo-library/src/android/PhotoLibraryService.java b/node_modules/cordova-plugin-photo-library/src/android/PhotoLibraryService.java
+index b9e24da..ead75e5 100644
+--- a/node_modules/cordova-plugin-photo-library/src/android/PhotoLibraryService.java
++++ b/node_modules/cordova-plugin-photo-library/src/android/PhotoLibraryService.java
+@@ -33,6 +33,8 @@ import java.net.URISyntaxException;
+ import java.text.SimpleDateFormat;
+ import java.util.ArrayList;
+ import java.util.Calendar;
++import java.util.Collections;
++import java.util.Comparator;
+ import java.util.Date;
+ import java.util.HashMap;
+ import java.util.Iterator;
+@@ -94,6 +96,27 @@ public class PhotoLibraryService {
+     String imageURL = getImageURL(photoId);
+     File imageFile = new File(imageURL);
+ 
++    // Video files have no EXIF / decodable bitmap data; use ThumbnailUtils
++    // to grab a frame instead of trying to decode the raw container.
++    String lowerURL = imageURL.toLowerCase();
++    boolean isVideo = lowerURL.endsWith(".mp4") || lowerURL.endsWith(".mov")
++      || lowerURL.endsWith(".m4v") || lowerURL.endsWith(".3gp")
++      || lowerURL.endsWith(".avi") || lowerURL.endsWith(".mkv")
++      || lowerURL.endsWith(".webm");
++    if (isVideo) {
++      Bitmap videoThumb = ThumbnailUtils.createVideoThumbnail(imageURL, MediaStore.Video.Thumbnails.MINI_KIND);
++      if (videoThumb == null) {
++        return null;
++      }
++      Bitmap scaled = ThumbnailUtils.extractThumbnail(videoThumb, thumbnailWidth, thumbnailHeight);
++      if (scaled != videoThumb) {
++        videoThumb.recycle();
++      }
++      byte[] bytes = getJpegBytesFromBitmap(scaled, quality);
++      scaled.recycle();
++      return new PictureData(bytes, "image/jpeg");
++    }
++
+     // TODO: maybe it never worth using MediaStore.Images.Thumbnails.getThumbnail, as it returns sizes less than 512x384?
+     if (thumbnailWidth == 512 && thumbnailHeight == 384) { // In such case, thumbnail will be cached by MediaStore
+       int imageId = getImageId(photoId);
+@@ -342,10 +365,36 @@ public class PhotoLibraryService {
+       put("float.latitude", MediaStore.Images.ImageColumns.LATITUDE);
+       put("float.longitude", MediaStore.Images.ImageColumns.LONGITUDE);
+       put("nativeURL", MediaStore.MediaColumns.DATA); // will not be returned to javascript
++      put("mimeType", MediaStore.Images.ImageColumns.MIME_TYPE);
+     }};
+ 
+     final ArrayList<JSONObject> queryResults = queryContentProvider(context, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, columns, whereClause);
+ 
++    // Also query videos so the picker can show video assets alongside photos.
++    // Latitude/Longitude are deprecated on Video columns (API 29+); skip them.
++    JSONObject videoColumns = new JSONObject() {{
++      put("int.id", MediaStore.Video.VideoColumns._ID);
++      put("fileName", MediaStore.Video.VideoColumns.DISPLAY_NAME);
++      put("int.width", MediaStore.Video.VideoColumns.WIDTH);
++      put("int.height", MediaStore.Video.VideoColumns.HEIGHT);
++      put("albumId", MediaStore.Video.VideoColumns.BUCKET_ID);
++      put("date.creationDate", MediaStore.Video.VideoColumns.DATE_TAKEN);
++      put("nativeURL", MediaStore.MediaColumns.DATA);
++      put("mimeType", MediaStore.Video.VideoColumns.MIME_TYPE);
++      put("int.duration", MediaStore.Video.VideoColumns.DURATION);
++    }};
++    final ArrayList<JSONObject> videoResults = queryContentProvider(context, MediaStore.Video.Media.EXTERNAL_CONTENT_URI, videoColumns, whereClause);
++    queryResults.addAll(videoResults);
++
++    // Merge-sort by creationDate (ISO string, lexicographically sortable) so
++    // images and videos interleave by date instead of all-images-then-all-videos.
++    Collections.sort(queryResults, new Comparator<JSONObject>() {
++      @Override
++      public int compare(JSONObject a, JSONObject b) {
++        return b.optString("creationDate", "").compareTo(a.optString("creationDate", ""));
++      }
++    });
++
+     ArrayList<JSONObject> chunk = new ArrayList<JSONObject>();
+ 
+     long chunkStartTime = SystemClock.elapsedRealtime();
+@@ -354,16 +403,20 @@ public class PhotoLibraryService {
+     for (int i=0; i<queryResults.size(); i++) {
+       JSONObject queryResult = queryResults.get(i);
+ 
+-      // swap width and height if needed
+-      try {
+-        int orientation = getImageOrientation(new File(queryResult.getString("nativeURL")));
+-        if (isOrientationSwapsDimensions(orientation)) { // swap width and height
+-          int tempWidth = queryResult.getInt("width");
+-          queryResult.put("width", queryResult.getInt("height"));
+-          queryResult.put("height", tempWidth);
++      // swap width and height if needed — skip for videos (no EXIF; rotation
++      // metadata lives in the container and ExifInterface can throw on it).
++      String resultMimeType = queryResult.optString("mimeType", "");
++      if (!resultMimeType.startsWith("video/")) {
++        try {
++          int orientation = getImageOrientation(new File(queryResult.getString("nativeURL")));
++          if (isOrientationSwapsDimensions(orientation)) { // swap width and height
++            int tempWidth = queryResult.getInt("width");
++            queryResult.put("width", queryResult.getInt("height"));
++            queryResult.put("height", tempWidth);
++          }
++        } catch (IOException e) {
++          // Do nothing
+         }
+-      } catch (IOException e) {
+-        // Do nothing
+       }
+ 
+       // photoId is in format "imageid;imageurl"
 diff --git a/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibrary.swift b/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibrary.swift
-index 04a6b5e..8aca976 100644
+index c745623..ac4eaab 100644
 --- a/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibrary.swift
 +++ b/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibrary.swift
 @@ -119,7 +119,7 @@ import Foundation
@@ -29,7 +137,7 @@ index 04a6b5e..8aca976 100644
              service.getThumbnail(photoId, thumbnailWidth: thumbnailWidth, thumbnailHeight: thumbnailHeight, quality: quality) { (imageData) in
  
 diff --git a/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibraryService.swift b/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibraryService.swift
-index d06f936..69385a4 100644
+index 120b7fa..69385a4 100644
 --- a/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibraryService.swift
 +++ b/node_modules/cordova-plugin-photo-library/src/ios/PhotoLibraryService.swift
 @@ -214,15 +214,20 @@ final class PhotoLibraryService {

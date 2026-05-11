@@ -1962,6 +1962,13 @@
                   for (const { item, url } of loaded) {
                     if (!url) continue;
                     const isVideo = (item.mimeType || '').startsWith('video/');
+                    // item.duration is milliseconds on Android (MediaStore),
+                    // seconds on iOS — normalize to seconds. Values <100 are
+                    // assumed already in seconds.
+                    let durationSec = null;
+                    if (isVideo && typeof item.duration === 'number') {
+                      durationSec = item.duration > 100 ? item.duration / 1000 : item.duration;
+                    }
                     photos.push({
                       url,
                       // For now the same thumbnail blob doubles as the export
@@ -1970,6 +1977,7 @@
                       originalUrl: url,
                       name: item.fileName || `photo-${item.id}`,
                       type: isVideo ? 'video' : 'image',
+                      duration: durationSec,
                     });
                   }
                   resolve(photos.length);
@@ -2228,24 +2236,42 @@
       }
     };
 
+    // Active category-tab filter. 'all' = show every photo+video,
+    // 'video' = show only items with type==='video'. The other category
+    // tabs (즐겨찾기, 셀피, etc.) currently render an empty placeholder
+    // since they require metadata the photoLibrary plugin doesn't surface.
+    let pickerFilter = 'all';
+
     const buildPicker = () => {
       pickerGrid.innerHTML = '';
-      if (photos.length === 0) {
+      const visible = photos
+        .map((photo, idx) => ({ photo, idx }))
+        .filter(({ photo }) => {
+          if (pickerFilter === 'video') return photo.type === 'video';
+          return true; // 'all'
+        });
+      if (visible.length === 0) {
         const empty = document.createElement('button');
         empty.type = 'button';
         empty.className = 'picker-empty';
+        const msg = pickerFilter === 'video'
+          ? '동영상이 없어요 — 탭하여 추가'
+          : '탭하여 사진 or 영상 선택';
         empty.innerHTML =
           '<span class="picker-empty-icon" aria-hidden="true">+</span>' +
-          '<span class="picker-empty-text">탭하여 사진 or 영상 선택</span>';
-        empty.addEventListener('click', () => photoInput.click());
+          `<span class="picker-empty-text">${msg}</span>`;
+        empty.addEventListener('click', () => {
+          photoInput.accept = pickerFilter === 'video' ? 'video/*' : 'image/*,video/*';
+          photoInput.click();
+        });
         pickerGrid.appendChild(empty);
         return;
       }
-      photos.forEach((photo, i) => {
+      visible.forEach(({ photo, idx }) => {
         const item = document.createElement('div');
         item.className = 'photo-item';
         item.style.backgroundImage = `url("${photo.url}")`;
-        item.dataset.index = String(i);
+        item.dataset.index = String(idx);
         if (photo.type === 'video') {
           const label = formatDuration(photo.duration);
           item.insertAdjacentHTML('beforeend', makeVideoBadgeHTML(label));
@@ -2254,7 +2280,7 @@
         icon.className = 'icon-check off';
         icon.dataset.name = 'icon_check_off';
         item.appendChild(icon);
-        item.addEventListener('click', () => togglePhoto(i));
+        item.addEventListener('click', () => togglePhoto(idx));
         pickerGrid.appendChild(item);
       });
       // "+" tile at the end to append more photos/videos.
@@ -2265,6 +2291,7 @@
       addBtn.setAttribute('aria-label', '사진/동영상 추가');
       addBtn.addEventListener('click', () => {
         photoInput.dataset.mode = 'append';
+        photoInput.accept = pickerFilter === 'video' ? 'video/*' : 'image/*,video/*';
         photoInput.click();
       });
       pickerGrid.appendChild(addBtn);
@@ -3378,6 +3405,12 @@
       tab.addEventListener('click', () => {
         document.querySelectorAll('.cat-tab').forEach((t) => t.classList.remove('is-active'));
         tab.classList.add('is-active');
+        // Map the tab label to a picker filter. Only 최근항목 (all) and
+        // Video are wired today; the rest fall through to 'all'.
+        const label = (tab.textContent || '').trim();
+        if (label === 'Video') pickerFilter = 'video';
+        else pickerFilter = 'all';
+        buildPicker();
       });
     });
 

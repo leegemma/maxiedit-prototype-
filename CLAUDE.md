@@ -332,19 +332,13 @@ Users identify elements by their **Figma node names** (`btn_start`, `btn_next`, 
 
 ## Android signing
 
-Release signing is **not** wired up yet (the current Capacitor scaffold only builds debug APKs). When it lands, follow these rules so the keystore never leaks into git:
+Release signing is **wired up**. `./gradlew bundleRelease` produces a signed `.aab` at `android/app/build/outputs/bundle/release/app-release.aab` — this is the artifact uploaded to Play Console.
 
-- Keystore file (`*.keystore` / `*.jks`) lives at `android/app/maxiedit-release.keystore`. Never check it in — `.gitignore` already excludes the patterns.
-- Credentials live in a separate `android/keystore.properties` (also gitignored). `app/build.gradle` reads it via `Properties()` so the values never appear in source. Skeleton:
-  ```properties
-  # android/keystore.properties — DO NOT commit
-  storeFile=maxiedit-release.keystore
-  storePassword=...
-  keyAlias=maxiedit
-  keyPassword=...
-  ```
-- Back the keystore + credentials up in **two places**: a password manager (1Password / Bitwarden) and an encrypted archive on a separate device or cloud. **Losing the keystore means losing the ability to ship updates under the same package id** (`com.leegemma.maxiedit`); recovery is impossible.
-- Verify backup integrity quarterly. Add a calendar reminder on the day signing is set up.
+- **Keystore**: `android/app/maxiedit-release.keystore` (PKCS12, RSA 2048, 10000-day validity, cert expires 2053-09-27). Generated via `keytool -genkeypair -storetype PKCS12 -keysize 2048 -validity 10000` with alias `maxiedit`. **Gitignored** (`*.keystore`).
+- **Credentials**: `android/keystore.properties` (gitignored, `keystore.properties` pattern). Template lives at `android/keystore.properties.example` (no real values, safe to commit). `app/build.gradle` loads it lazily — if the file is missing (CI / fresh clone), release build silently falls back to unsigned, debug builds keep working.
+- **storeFile path**: resolved relative to `android/` (not `android/app/`). With `storeFile=app/maxiedit-release.keystore`, gradle reads `rootProject.file(...)` which is the `android/` dir.
+- **Back the keystore + credentials up in two places**: a password manager (1Password / Bitwarden) and an encrypted archive on a separate device or cloud. **Losing the keystore means losing the ability to ship updates under the same package id** (`com.leegemma.maxiedit`); recovery is impossible. Verify backup integrity quarterly.
+- **Build verification**: `jarsigner -verify path/to/app-release.aab` should print `signer certificate will expire on 2053-09-27`. The benign warnings about "signed in JarFile but is not signed in JarInputStream" are AAB-internal metadata and don't indicate signature failure.
 
 ## Android build (Capacitor)
 

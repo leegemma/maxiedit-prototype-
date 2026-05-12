@@ -1222,6 +1222,22 @@
       box-sizing: border-box;
       cursor: pointer;
     }
+    /* Text-alignment modes set by `#btn-align`. Center is the base rule
+       above (no modifier class). Left attaches text to top-left corner
+       of the text panel with 24px top/left padding; right attaches to
+       bottom-right with 24px bottom/right padding. */
+    .split-text.is-align-left {
+      align-items: flex-start;
+      justify-content: flex-start;
+      text-align: left;
+      padding: 24px 20px 20px 24px;
+    }
+    .split-text.is-align-right {
+      align-items: flex-end;
+      justify-content: flex-end;
+      text-align: right;
+      padding: 20px 24px 24px 20px;
+    }
     .indicator {
       position: absolute;
       left: 0;
@@ -1388,7 +1404,7 @@
     .single-controls::-webkit-scrollbar,
     .result-controls::-webkit-scrollbar { display: none; }
     /* Matches .btn-reset exactly so both result footers align vertically */
-    .btn-text-single, .btn-flip {
+    .btn-text-single, .btn-flip, .btn-align {
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -1406,8 +1422,8 @@
       font-family: inherit;
       transition: opacity 0.15s;
     }
-    .btn-text-single:active, .btn-flip:active { opacity: 0.7; }
-    .btn-text-single svg, .btn-flip svg {
+    .btn-text-single:active, .btn-flip:active, .btn-align:active { opacity: 0.7; }
+    .btn-text-single svg, .btn-flip svg, .btn-align svg {
       width: 18px;
       height: 18px;
       stroke: currentColor;
@@ -1830,6 +1846,14 @@
         <button class="btn-flip" type="button" id="btn-flip" data-name="btn_flip">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5"/></svg>
           <span>뒤집기</span>
+        </button>
+        <!-- Text-alignment cycle button. Tap cycles 정렬 → 좌상단 → 중앙 → 우하단 → 좌상단 …
+             Icon path is rewritten in JS to mirror the current state. -->
+        <button class="btn-align" type="button" id="btn-align" data-name="btn_align">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path id="btn-align-path" d="M3.75 6h16.5M3.75 12h16.5M3.75 18h16.5"/>
+          </svg>
+          <span id="btn-align-label">정렬</span>
         </button>
       </div>
     </section>
@@ -3652,6 +3676,8 @@
         image.className = 'split-image';
         const text = document.createElement('div');
         text.className = 'split-text';
+        if (textAlignment === 'left') text.classList.add('is-align-left');
+        else if (textAlignment === 'right') text.classList.add('is-align-right');
         text.textContent = textLabels[i] || '';
         text.addEventListener('click', () => openTextedit(i));
 
@@ -3774,6 +3800,44 @@
     document.getElementById('btn-flip-center').addEventListener('click', flipCurrentSlide);
     btnTextSingle.addEventListener('click', () => openTextedit(currentSingleIdx));
 
+    // --- Single-view text-alignment cycle ---
+    // textAlignment is null before the first tap (label shows '정렬');
+    // afterwards it cycles ALIGN_CYCLE: left → center → right → left → …
+    // Persisted globally across slides — one tap aligns every text panel.
+    let textAlignment = null;
+    const ALIGN_CYCLE = ['left', 'center', 'right'];
+    const ALIGN_ICON_PATHS = {
+      // default: 3 equal full-width bars
+      default: 'M3.75 6h16.5M3.75 12h16.5M3.75 18h16.5',
+      // left: descending bars left-anchored (suggests text in top-left)
+      left:    'M3.75 6h16.5M3.75 10h10.5M3.75 14h6.5',
+      // center: 3 bars centered horizontally, middle longest
+      center:  'M6 8h12M4 12h16M6 16h12',
+      // right: ascending bars right-anchored (suggests text in bottom-right)
+      right:   'M13.5 10h6.75M10.25 14h10M3.75 18h16.5',
+    };
+    const ALIGN_LABELS = { default: '정렬', left: '좌상단', center: '중앙', right: '우하단' };
+    const btnAlign = document.getElementById('btn-align');
+    const btnAlignPath = document.getElementById('btn-align-path');
+    const btnAlignLabel = document.getElementById('btn-align-label');
+    const applyTextAlignmentToDOM = () => {
+      document.querySelectorAll('.split-text').forEach((el) => {
+        el.classList.remove('is-align-left', 'is-align-right');
+        if (textAlignment === 'left') el.classList.add('is-align-left');
+        else if (textAlignment === 'right') el.classList.add('is-align-right');
+      });
+      const key = textAlignment || 'default';
+      btnAlignPath.setAttribute('d', ALIGN_ICON_PATHS[key]);
+      btnAlignLabel.textContent = ALIGN_LABELS[key];
+    };
+    btnAlign.addEventListener('click', () => {
+      const nextIdx = textAlignment === null
+        ? 0                                                        // first tap → left
+        : (ALIGN_CYCLE.indexOf(textAlignment) + 1) % ALIGN_CYCLE.length;
+      textAlignment = ALIGN_CYCLE[nextIdx];
+      applyTextAlignmentToDOM();
+    });
+
     // --- single-slide export helpers ---
 
     // Paint the split-slide layout (image/video half + text half, respecting flip) onto
@@ -3800,9 +3864,24 @@
       ctx.fillStyle = '#000';
       const fontSize = Math.round(w * 0.045);
       ctx.font = `700 ${fontSize}px "Nanum Myeongjo", serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(slide.text || '', w / 2, textY + halfH / 2);
+      // Honor the current text-alignment cycle so saved PNG/MP4 matches
+      // what the user saw on screen. Padding = 24/393 * w ≈ 6.1% on each
+      // anchored edge so the canvas mirrors the on-screen .split-text rule.
+      const pad = Math.round(w * 0.061);
+      const align = (typeof textAlignment !== 'undefined') ? textAlignment : null;
+      if (align === 'left') {
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(slide.text || '', pad, textY + pad);
+      } else if (align === 'right') {
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(slide.text || '', w - pad, textY + halfH - pad);
+      } else {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(slide.text || '', w / 2, textY + halfH / 2);
+      }
     };
 
     // Build a slide descriptor (image or video element) for the current single slot.

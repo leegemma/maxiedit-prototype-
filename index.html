@@ -1824,11 +1824,24 @@
 
     // ─── AdMob (TODO #13) ─────────────────────────────────────────────
     // Both platforms on production AdMob ad-unit IDs (Rewarded).
-    // `isTesting: true` below keeps test devices off real billing even
-    // on production IDs; flip it to false when shipping to Play Store /
-    // App Store.
+    //
+    // Production ad serving model: `isTesting: false` everywhere. Developer
+    // test devices are registered by hashed advertising ID in
+    // `AD_TEST_DEVICE_IDS` below — Google's SDK auto-serves test ads to any
+    // device whose ID is in that list, regardless of `isTesting`. Real users
+    // (devices NOT in the list) get real ads and we get paid. This is the
+    // TOS-compliant pattern; do NOT set `isTesting: true` with production
+    // ad-unit IDs in a shipped build.
+    //
+    // To add a new test device: install a debug build, trigger the ad gate,
+    // and check logcat (Android) / Xcode console (iOS) for the line:
+    //   "Use RequestConfiguration.Builder().setTestDeviceIds(Arrays.asList(\"XXX\"))"
+    // Copy the hex string and append to AD_TEST_DEVICE_IDS.
     const AD_REWARDED_IOS = 'ca-app-pub-1905722384577365/6534639867';
     const AD_REWARDED_ANDROID = 'ca-app-pub-1905722384577365/2431743322';
+    const AD_TEST_DEVICE_IDS = [
+      '4BA53205346292F8CFB8A0C8EF6B97B2', // BOOX Palma — dev device
+    ];
     const FREE_DOWNLOADS = 1; // first save bypasses the ad gate
     const adsApi = () => {
       if (!window.Capacitor) return null;
@@ -1841,7 +1854,8 @@
       try {
         await AdMob.initialize({
           requestTrackingAuthorization: true,
-          initializeForTesting: true,
+          testingDevices: AD_TEST_DEVICE_IDS,
+          initializeForTesting: false,
         });
       } catch (err) {
         console.warn('[ads] initialize failed', err);
@@ -1862,7 +1876,7 @@
       const platform = window.Capacitor.getPlatform();
       const adId = platform === 'ios' ? AD_REWARDED_IOS : AD_REWARDED_ANDROID;
       try {
-        await AdMob.prepareRewardVideoAd({ adId, isTesting: true });
+        await AdMob.prepareRewardVideoAd({ adId, isTesting: false });
         const reward = await AdMob.showRewardVideoAd();
         // showRewardVideoAd resolves with the reward object on completion;
         // a missing/zero amount means the user dismissed early.

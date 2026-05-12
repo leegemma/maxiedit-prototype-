@@ -280,7 +280,7 @@ The app monetizes via Google AdMob through the [`@capacitor-community/admob`](ht
 
 App IDs and ad-unit IDs:
 
-- Both platforms now point at **production AdMob IDs** for MaxiEdit (publisher `ca-app-pub-1905722384577365`). `showRewardedAd` still calls the plugin with `isTesting: true` so dev devices stay off real billing — flip to `false` (or env-gate it) at Play Store / App Store release.
+- Both platforms now point at **production AdMob IDs** for MaxiEdit (publisher `ca-app-pub-1905722384577365`). **Production ad serving is live**: `isTesting: false` in `prepareRewardVideoAd` and `initializeForTesting: false` in `AdMob.initialize`. Real users get real ads (and we get paid); developer test devices are routed to Google test ads automatically by listing their hashed advertising IDs in `AD_TEST_DEVICE_IDS` (passed to `initialize` as `testingDevices`). To register a new dev device: install a debug build, trigger any ad, and copy the device hash from the `Use RequestConfiguration.Builder().setTestDeviceIds(...)` line in logcat / Xcode console. Do **NOT** revert to `isTesting: true` with production ad-unit IDs — that's a TOS gray area Google has flagged in past enforcement waves.
 - ID locations:
   - `android/app/src/main/AndroidManifest.xml` `com.google.android.gms.ads.APPLICATION_ID` meta-data → Android App ID
   - `ios/App/App/Info.plist` `GADApplicationIdentifier` → iOS App ID

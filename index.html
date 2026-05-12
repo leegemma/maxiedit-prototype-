@@ -1245,7 +1245,7 @@
        Caret tip lands just above the photo's top (y≈63). */
     .result-tap-hint {
       position: absolute;
-      top: 30px;
+      top: 60px;
       left: 95px;
       transform: translateX(-50%);
       background: #000;
@@ -1253,13 +1253,16 @@
       border: 1px solid rgba(255, 255, 255, 0.22);
       font-size: 12px;
       font-weight: 600;
-      padding: 6px 12px;
+      padding: 6px 6px 6px 12px;     /* tighter right padding — X button sits there */
       border-radius: 999px;
       z-index: 5;
-      pointer-events: none;
+      pointer-events: none;          /* text passes through to the photo slot below */
       white-space: nowrap;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
       animation: result-tap-bounce 1.2s ease-in-out infinite;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
     .result-tap-hint::after {
       content: '';
@@ -1272,6 +1275,32 @@
       border-left: 5px solid transparent;
       border-right: 5px solid transparent;
       border-top: 5px solid #000;
+    }
+    .result-tap-hint-close {
+      pointer-events: auto;          /* re-enable taps inside the no-tap pill */
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      flex-shrink: 0;
+      transition: background-color 0.15s;
+    }
+    .result-tap-hint-close:active { background: rgba(255, 255, 255, 0.25); }
+    .result-tap-hint-close svg {
+      width: 12px;
+      height: 12px;
+      stroke: #fff;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      display: block;
     }
     @keyframes result-tap-bounce {
       0%, 100% { transform: translate(-50%, 0); }
@@ -1695,8 +1724,16 @@
 
       <!-- First-touch hint: each grid slot is tappable and opens the
            single-slide editor (12_single). Bouncing pill dismisses on
-           the first slot tap of the page entry. -->
-      <div class="result-tap-hint" id="result-tap-hint" hidden>슬롯을 탭해 편집해요</div>
+           the first slot tap of the page entry OR when the user taps
+           the X button on the right. -->
+      <div class="result-tap-hint" id="result-tap-hint" hidden>
+        <span>슬롯을 탭해 편집해요</span>
+        <button class="result-tap-hint-close" type="button" id="result-tap-hint-close" aria-label="알림 끄기">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 18 18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
 
       <div class="indicator" id="result-indicator"></div>
 
@@ -3903,6 +3940,15 @@
       // Only open single view when this slot has a photo/video.
       if (selected[slotIdx] !== undefined) openSingle(slotIdx);
     });
+    // X button on the tap-hint dismisses it explicitly.
+    const tapHintCloseBtn = document.getElementById('result-tap-hint-close');
+    if (tapHintCloseBtn) {
+      tapHintCloseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();          // don't bubble to the slot underneath
+        const hint = document.getElementById('result-tap-hint');
+        if (hint) hint.setAttribute('hidden', '');
+      });
+    }
     buildPicker();
     renderTextareas();
     render();

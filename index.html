@@ -1918,6 +1918,13 @@
   </div>
   </div><!-- /.app-frame -->
 
+  <!-- Firebase Analytics (compat). Synchronous load so window.firebase is
+       defined before the main inline script runs. Anonymous usage telemetry
+       only — feature funnel, screen views, error counts, ad/download success
+       rates. See docs/privacy.html for what is/isn't collected. -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics-compat.js"></script>
+
   <script>
     // Global error handlers — TODO #4 stage 1.
     // Currently just console.error so issues surface during development.
@@ -1933,7 +1940,39 @@
     });
     window.addEventListener('unhandledrejection', (event) => {
       console.error('[unhandled rejection]', event.reason);
+      track('unhandled_rejection', { msg: String(event.reason).slice(0, 100) });
     });
+
+    // ─── Firebase Analytics ───────────────────────────────────────────
+    // Anonymous app-usage telemetry. apiKey is restricted by Firebase
+    // project rules and is safe to commit (standard pattern for Firebase
+    // web apps). Project: maxedit-b0292.
+    //
+    // The `track(event, params)` helper is no-op when analytics isn't
+    // available (Firebase script blocked, offline cold-start, etc.) so
+    // call sites never need to null-check.
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyBq95xA4asmGx65aKpZy_YxGOnP9eijonI",
+      authDomain: "maxedit-b0292.firebaseapp.com",
+      projectId: "maxedit-b0292",
+      storageBucket: "maxedit-b0292.firebasestorage.app",
+      messagingSenderId: "956936630001",
+      appId: "1:956936630001:web:b877fa32f4d9c33ecd8350",
+      measurementId: "G-FNX3LD6TSX"
+    };
+    let _analytics = null;
+    try {
+      if (typeof firebase !== 'undefined' && firebase.initializeApp) {
+        firebase.initializeApp(FIREBASE_CONFIG);
+        _analytics = firebase.analytics();
+      }
+    } catch (err) {
+      console.warn('[analytics] init failed', err);
+    }
+    function track(eventName, params) {
+      if (!_analytics) return;
+      try { _analytics.logEvent(eventName, params || {}); } catch {}
+    }
 
     // ─── AdMob (TODO #13) ─────────────────────────────────────────────
     // Both platforms on production AdMob ad-unit IDs (Rewarded).
@@ -1988,14 +2027,19 @@
       if (!AdMob) return true; // browser/web — no ad to show, treat as reward
       const platform = window.Capacitor.getPlatform();
       const adId = platform === 'ios' ? AD_REWARDED_IOS : AD_REWARDED_ANDROID;
+      track('ad_requested', { platform });
       try {
         await AdMob.prepareRewardVideoAd({ adId, isTesting: false });
+        track('ad_prepared', { platform });
         const reward = await AdMob.showRewardVideoAd();
         // showRewardVideoAd resolves with the reward object on completion;
         // a missing/zero amount means the user dismissed early.
-        return !!(reward && (reward.amount > 0 || reward.type));
+        const earned = !!(reward && (reward.amount > 0 || reward.type));
+        track(earned ? 'ad_completed' : 'ad_dismissed', { platform });
+        return earned;
       } catch (err) {
         console.warn('[ads] rewarded failed', err);
+        track('ad_failed', { platform, msg: String(err && err.message || err).slice(0, 80) });
         return false;
       }
     };
@@ -2685,6 +2729,15 @@
       buildPicker();
       render();
       renderResultIndicator();
+      const addedImage = files.filter((f) => isImageFile(f)).length;
+      const addedVideo = files.filter((f) => isVideoFile(f)).length;
+      track('photo_import', {
+        added: files.length,
+        image_count: addedImage,
+        video_count: addedVideo,
+        append: append ? 1 : 0,
+        photos_total: photos.length,
+      });
     };
 
     // Indicator-dot inner content builders. Each dot is a 27×35 miniature
@@ -2785,6 +2838,7 @@
         else el.setAttribute('hidden', '');
       });
       currentPage = name;
+      track('screen_view', { screen: name, selected_count: selected.length });
       if (name === 'edit') {
         // Inertial slide-up for bottom_layer_select on every edit-page entry.
         if (bottomLayerSelectEl) {
@@ -3025,6 +3079,8 @@
 
     // Share / anchor-download a Blob as a given file name.
     const saveBlob = async (blob, fileName) => {
+      const ext = (fileName.split('.').pop() || '').toLowerCase();
+      track('save_attempt', { format: ext, size_kb: Math.round((blob.size || 0) / 1024) });
       // ── Path 1: Native gallery save via cordova-plugin-photo-library.
       // Lands directly in Photos/Gallery (Android: Pictures/MaxiEdit album,
       // iOS: Photos > MaxiEdit album) instead of the Downloads folder.
@@ -3055,6 +3111,7 @@
               );
             });
             incrementDownloadCount();
+            track('save_success', { format: ext, path: 'photo_library' });
             return true;
           } catch (err) {
             console.warn('[saveBlob] photo-library save failed, falling back', err);
@@ -3069,9 +3126,13 @@
         try {
           await navigator.share({ files: [file], title: 'MaxiEdit' });
           incrementDownloadCount();
+          track('save_success', { format: ext, path: 'web_share' });
           return true;
         } catch (err) {
-          if (err && err.name === 'AbortError') return false; // user cancelled
+          if (err && err.name === 'AbortError') {
+            track('save_cancelled', { format: ext, path: 'web_share' });
+            return false;
+          }
           // other errors → fall through to anchor download
         }
       }
@@ -3087,6 +3148,7 @@
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
       incrementDownloadCount();
+      track('save_success', { format: ext, path: 'anchor' });
       return true;
     };
 
@@ -3794,7 +3856,10 @@
     btnSingleClose.addEventListener('click', () => goTo('result'));
     const flipCurrentSlide = () => {
       const slide = splitTrack.children[currentSingleIdx];
-      if (slide) slide.classList.toggle('is-flipped');
+      if (slide) {
+        slide.classList.toggle('is-flipped');
+        track('slide_flipped', { idx: currentSingleIdx, flipped: slide.classList.contains('is-flipped') ? 1 : 0 });
+      }
     };
     btnFlip.addEventListener('click', flipCurrentSlide);
     document.getElementById('btn-flip-center').addEventListener('click', flipCurrentSlide);
@@ -3836,6 +3901,7 @@
         : (ALIGN_CYCLE.indexOf(textAlignment) + 1) % ALIGN_CYCLE.length;
       textAlignment = ALIGN_CYCLE[nextIdx];
       applyTextAlignmentToDOM();
+      track('text_alignment_changed', { value: textAlignment });
     });
 
     // --- single-slide export helpers ---

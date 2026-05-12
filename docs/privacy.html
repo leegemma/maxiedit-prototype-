@@ -97,13 +97,13 @@
     <a class="back" href="../">← 메인으로 / Back</a>
     <h1>개인정보처리방침 / Privacy Policy</h1>
     <p class="subtitle">MaxiEdit (com.leegemma.maxiedit)</p>
-    <p class="effective">Effective: 2026-04-30 · Last updated: 2026-04-30</p>
+    <p class="effective">Effective: 2026-04-30 · Last updated: 2026-05-12</p>
 
     <h2 class="section-title">요약 / Summary</h2>
 
     <div class="block">
-      <p>사용자가 선택한 사진·영상은 디바이스 내부에서만 처리되며 어떤 서버에도 업로드되지 않습니다. <strong>다만 무료 운영을 위해 Google AdMob 광고 SDK를 사용하며, AdMob이 광고 노출·맞춤 광고 목적으로 광고 ID(IDFA/AAID), IP 주소, 디바이스 정보 등을 수집·전송합니다.</strong></p>
-      <p class="en">Photos and videos you select are processed entirely on your device and are never uploaded to any server. <strong>However, the app is funded by ads served via Google AdMob, which collects and shares the advertising identifier (IDFA/AAID), IP address, and basic device data for ad delivery and personalization.</strong></p>
+      <p>사용자가 선택한 사진·영상은 디바이스 내부에서만 처리되며 어떤 서버에도 업로드되지 않습니다. <strong>다만 무료 운영과 서비스 개선을 위해 (1) Google AdMob 광고 SDK가 광고 ID(IDFA/AAID)·IP·디바이스 정보를 수집·전송하고, (2) Google Firebase Analytics가 익명 사용 패턴(어떤 화면을 방문했고 어떤 기능을 썼는지 등의 집계 데이터)을 수집합니다. 개인을 식별할 수 있는 정보는 수집하지 않습니다.</strong></p>
+      <p class="en">Photos and videos you select are processed entirely on your device and are never uploaded to any server. <strong>However, to fund and improve the app, (1) Google AdMob collects and shares the advertising identifier (IDFA/AAID), IP, and basic device data, and (2) Google Firebase Analytics collects anonymous usage patterns (which screens are visited, which features are used, etc., as aggregate counts). No personally identifying data is collected.</strong></p>
     </div>
 
     <h2 class="section-title">수집·전송되는 데이터 / Data collected &amp; shared</h2>
@@ -133,9 +133,15 @@
     </div>
 
     <div class="block">
-      <div class="block-title">분석·크래시 리포트 / Analytics &amp; crash reports</div>
-      <p>현재 미사용. 향후 도입 시 본 방침을 갱신합니다.</p>
-      <p class="en">None currently. If introduced later, this policy will be updated.</p>
+      <div class="block-title">분석 / Analytics (Google Firebase Analytics)</div>
+      <p>익명 사용 패턴(앱 실행, 화면 진입, 사진/영상 추가 횟수, 다운로드 시도/성공/실패, 광고 시청 완료 여부, 텍스트 정렬·뒤집기 등 기능 사용 빈도) 및 익명 디바이스 식별자(Google 광고 ID 또는 임시 인스턴스 ID), 대략적 위치(IP 기반 국가/도시 수준), OS·기기 모델·앱 버전을 Firebase로 전송합니다. 개별 사용자를 식별하거나 사진/영상 콘텐츠를 전송하지 않으며, 집계 형태로만 활용해 어떤 기능을 더 다듬어야 할지 판단합니다. Google 데이터 보존 기간은 기본 14개월입니다.</p>
+      <p class="en">Anonymous usage patterns (app open, screen views, photo/video import counts, download attempts/success/failures, ad watch completion, feature usage such as text alignment and flip) along with an anonymous device identifier (advertising ID or transient instance ID), approximate location (IP-derived country/city), OS, device model, and app version are sent to Firebase. No individual user identification and no photo/video content are transmitted; only aggregate metrics are used to understand which features to improve. Google's default retention period is 14 months.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-title">크래시 리포트 / Crash reports</div>
+      <p>현재 미사용. Firebase Crashlytics 도입 시 본 방침을 갱신합니다.</p>
+      <p class="en">None currently. If Firebase Crashlytics is added later, this policy will be updated.</p>
     </div>
 
     <h2 class="section-title">사용하는 권한 / Permissions used</h2>
@@ -167,16 +173,17 @@
         <li>Google Fonts (Inter, Noto Sans KR, Nanum Myeongjo)</li>
         <li>jsDelivr CDN — Sortable.js, html2canvas, ffmpeg.wasm (지연 로드)</li>
         <li><strong>Google AdMob</strong> — 광고 노출 및 IDFA/AAID·IP·기기 정보 수집·공유 (위 "수집·전송되는 데이터" 참고)</li>
+        <li><strong>Google Firebase Analytics</strong> — 익명 사용 패턴·집계 데이터 수집 (위 "분석" 항목 참고)</li>
       </ul>
-      <p class="en" style="margin-top: 8px;">Static assets above are fetched without identifiers; AdMob fetches collect and share the data described in the "Data collected &amp; shared" section.</p>
-      <p style="margin-top: 8px;">전체 라이선스: <a class="link" href="licenses.html">licenses.html</a> · AdMob 정책: <a class="link" href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">Google Ads policy</a></p>
+      <p class="en" style="margin-top: 8px;">Static assets above are fetched without identifiers; AdMob and Firebase Analytics fetches collect and share the data described in the "Data collected &amp; shared" section.</p>
+      <p style="margin-top: 8px;">전체 라이선스: <a class="link" href="licenses.html">licenses.html</a> · AdMob 정책: <a class="link" href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">Google Ads policy</a> · Firebase 정책: <a class="link" href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">Firebase privacy</a></p>
     </div>
 
     <h2 class="section-title">아동 데이터 / Children's data</h2>
 
     <div class="block">
-      <p>이 앱은 어떤 데이터도 수집하지 않으므로 만 14세 미만 아동의 정보가 별도로 수집·처리되는 일이 없습니다.</p>
-      <p class="en">Since the app collects no data at all, no information from children under 14 is collected or processed separately.</p>
+      <p>본 앱은 만 14세 이상 사용자를 대상으로 합니다. AdMob 광고 ID와 Firebase Analytics 익명 사용 데이터 수집이 만 14세 미만 아동을 표적으로 활용되지 않도록 두 SDK 모두 비아동 대상 모드로만 동작합니다(tagForChildDirectedTreatment 미적용 = 일반 사용자 모드).</p>
+      <p class="en">This app targets users aged 14 and older. Both AdMob and Firebase Analytics operate in standard (non-child-directed) mode — tagForChildDirectedTreatment is not set — so no identifiers are tagged as targeting users under 14.</p>
     </div>
 
     <h2 class="section-title">변경 사항 / Changes to this policy</h2>

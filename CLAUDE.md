@@ -234,7 +234,37 @@ A pair of global handlers sits at the top of `index.html`'s main `<script>`:
 
 Both currently just `console.error` with structured context. This is **stage 1** of TODO.md #4 — the goal is to give a single funnel that a real reporter (Sentry, Crashlytics, etc.) can hook into later without touching the rest of the codebase. When adding stage 2, replace the `console.error` body with the reporter's `captureException`, keep the listeners themselves intact.
 
+The unhandledrejection handler currently fires a `track('unhandled_rejection', { msg })` event into Firebase Analytics (see "Analytics" section) so promise-rejection counts surface in the dashboard even without a dedicated crash reporter. The synchronous error handler is left alone for now — too noisy without filtering — and will move into the analytics path along with Crashlytics in stage 2.
+
 Don't swallow errors in app code by adding broad `try/catch` blocks just to silence them — let them bubble to these handlers so they're visible.
+
+## Analytics (Firebase)
+
+Anonymous app-usage telemetry via **Firebase Analytics Web SDK** loaded from Google's CDN (compat build, v10.7.0). Firebase project: `maxedit-b0292`, measurementId `G-FNX3LD6TSX`. The two `<script>` tags load **synchronously before the main inline script** so `window.firebase` is ready when `firebase.initializeApp(...)` runs; the `track(eventName, params)` helper is a no-op when the SDK isn't loaded (offline cold start, blocked CDN, etc.) so call sites never need to null-check.
+
+Wired events (one fires per user action; all events are anonymous and aggregate-only — no PII, no photo content):
+
+| Event | When | Params |
+|---|---|---|
+| `screen_view` | every `goTo(name)` page transition | `screen`, `selected_count` |
+| `photo_import` | end of `loadPhotoFiles` (OS picker or `+` tile append) | `added`, `image_count`, `video_count`, `append`, `photos_total` |
+| `save_attempt` | top of `saveBlob` (before path 1/2/3 attempts) | `format` (png/mp4), `size_kb` |
+| `save_success` | each successful save path resolves | `format`, `path` (photo_library / web_share / anchor) |
+| `save_cancelled` | user cancels the Web Share sheet | `format`, `path` |
+| `ad_requested` | enter `showRewardedAd` | `platform` |
+| `ad_prepared` | `prepareRewardVideoAd` succeeds | `platform` |
+| `ad_completed` | user watched ad fully and got reward | `platform` |
+| `ad_dismissed` | reward not earned (closed early) | `platform` |
+| `ad_failed` | thrown error in ad flow (network, SDK, etc.) | `platform`, `msg` (truncated) |
+| `text_alignment_changed` | tap `#btn-align` cycles state | `value` (left/center/right) |
+| `slide_flipped` | flip toggle on any slide (footer button or `.btn-flip-center`) | `idx`, `flipped` |
+| `unhandled_rejection` | global `unhandledrejection` handler | `msg` (truncated) |
+
+Auto-collected by Firebase Analytics (no code): `first_open`, `session_start`, `app_remove`, plus device info (OS, model, language, app version), country (IP-derived). Default Google retention: 14 months.
+
+To add a new event: call `track('event_name', { param: value, ... })` at the call site. The helper is intentionally synchronous and silent on failure — never await it, never put it in a chain that gates other logic. If a parameter could contain user content (file names, text labels), DON'T pass it raw; use a coarse classification or hash.
+
+Privacy implications are declared in [docs/privacy.html](docs/privacy.html) "Analytics" section. The Play Console **Data safety form** must declare these collections explicitly — see release notes for the exact selections.
 
 ## Video limits
 

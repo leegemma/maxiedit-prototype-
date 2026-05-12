@@ -1228,7 +1228,7 @@
       right: 0;
       display: flex;
       justify-content: center;
-      gap: 6px;
+      gap: 10px;
     }
     .indicator:empty { display: none; }
     /* Both 10_result .full-image (after scale 0.842 → 440px visual) and
@@ -1309,17 +1309,69 @@
     @media (prefers-reduced-motion: reduce) {
       .result-tap-hint { animation: none; }
     }
+    /* Indicator tiles are 27×35 miniatures of what each view shows:
+       - Full-image tile (first position): 3×3 mini grid + tiny text strip
+         at the bottom, mirroring 10_result's photo grid + caption legend.
+       - Single-slide tile (per selected slot): top image-half + bottom
+         text-half with 2 line marks, mirroring 12_single's split layout.
+       Active tile is full-opacity with bright outline; inactive ones dim. */
     .indicator-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.25);
-      border: none;
+      width: 27px;
+      height: 35px;
+      border-radius: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: transparent;
       padding: 0;
       cursor: pointer;
-      transition: background-color 0.15s, width 0.18s ease;
+      overflow: hidden;
+      box-sizing: border-box;
+      display: flex;
+      opacity: 0.45;
+      transition: opacity 0.18s, border-color 0.18s;
     }
-    .indicator-dot.is-active { background: #fff; width: 18px; border-radius: 3px; }
+    .indicator-dot.is-active { opacity: 1; border-color: #fff; }
+    .indicator-icon-full,
+    .indicator-icon-single {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 2px;
+      gap: 1px;
+      pointer-events: none;
+    }
+    .indicator-icon-full > .indicator-grid {
+      flex: 5;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 1px;
+    }
+    .indicator-icon-full .indicator-cell {
+      background: #fff;
+      border-radius: 0.5px;
+    }
+    .indicator-icon-full > .indicator-text-strip,
+    .indicator-icon-single > .indicator-text-half {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1px;
+      padding: 0 1px;
+    }
+    .indicator-icon-full .indicator-text-line,
+    .indicator-icon-single .indicator-text-line {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.85);
+    }
+    .indicator-icon-single > .indicator-img-half {
+      flex: 1;
+      background: #fff;
+      border-radius: 0.5px;
+    }
+    .indicator-icon-single > .indicator-text-half {
+      flex: 1;
+    }
     .single-controls,
     .result-controls {
       position: absolute;
@@ -2611,6 +2663,47 @@
       renderResultIndicator();
     };
 
+    // Indicator-dot inner content builders. Each dot is a 27×35 miniature
+    // of the view it links to: full-image (3×3 grid + caption strip) or
+    // single-slide (top image half + bottom text lines).
+    const buildIndicatorIconFull = () => {
+      const wrap = document.createElement('span');
+      wrap.className = 'indicator-icon-full';
+      const grid = document.createElement('span');
+      grid.className = 'indicator-grid';
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('span');
+        cell.className = 'indicator-cell';
+        grid.appendChild(cell);
+      }
+      const strip = document.createElement('span');
+      strip.className = 'indicator-text-strip';
+      for (let i = 0; i < 2; i++) {
+        const line = document.createElement('span');
+        line.className = 'indicator-text-line';
+        strip.appendChild(line);
+      }
+      wrap.appendChild(grid);
+      wrap.appendChild(strip);
+      return wrap;
+    };
+    const buildIndicatorIconSingle = () => {
+      const wrap = document.createElement('span');
+      wrap.className = 'indicator-icon-single';
+      const img = document.createElement('span');
+      img.className = 'indicator-img-half';
+      const text = document.createElement('span');
+      text.className = 'indicator-text-half';
+      for (let i = 0; i < 2; i++) {
+        const line = document.createElement('span');
+        line.className = 'indicator-text-line';
+        text.appendChild(line);
+      }
+      wrap.appendChild(img);
+      wrap.appendChild(text);
+      return wrap;
+    };
+
     // Result-page indicator: 1 dot for full_image + 1 per selected slot.
     const renderResultIndicator = () => {
       if (!resultIndicator) return;
@@ -2622,6 +2715,7 @@
         dot.type = 'button';
         dot.className = 'indicator-dot' + (i === 0 ? ' is-active' : '');
         dot.setAttribute('aria-label', i === 0 ? '전체 보기' : `${i}번째 보기`);
+        dot.appendChild(i === 0 ? buildIndicatorIconFull() : buildIndicatorIconSingle());
         dot.addEventListener('click', () => {
           if (i === 0) return;
           openSingle(i - 1);
@@ -3606,6 +3700,7 @@
       backDot.type = 'button';
       backDot.className = 'indicator-dot';
       backDot.setAttribute('aria-label', '전체 보기로');
+      backDot.appendChild(buildIndicatorIconFull());
       backDot.addEventListener('click', () => goTo('result'));
       singleIndicator.appendChild(backDot);
       selected.forEach((_, i) => {
@@ -3613,6 +3708,7 @@
         dot.type = 'button';
         dot.className = 'indicator-dot' + (i === currentSingleIdx ? ' is-active' : '');
         dot.setAttribute('aria-label', `${i + 1}번째`);
+        dot.appendChild(buildIndicatorIconSingle());
         dot.addEventListener('click', () => scrollSingleTo(i, true));
         singleIndicator.appendChild(dot);
       });

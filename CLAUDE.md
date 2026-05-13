@@ -331,6 +331,24 @@ Doc edits are staged with the source change so each commit is `(source + docs)` 
 
 See [SKILLS.md](SKILLS.md) for which Claude Code skills to invoke (and which to skip) for this project.
 
+## Hooks ([.claude/hooks/](.claude/hooks/))
+
+Four hooks are wired in [.claude/settings.json](.claude/settings.json) — all read Claude Code's stdin JSON via `node -e` (no `jq` dependency) and write nothing to disk except the cap:sync side-effect.
+
+| Hook | Event + Matcher | Script | Behavior |
+|---|---|---|---|
+| **Auto sync:www** | `PostToolUse` on `Edit\|Write\|MultiEdit` | [sync-on-index-edit.sh](.claude/hooks/sync-on-index-edit.sh) | Runs `sync:www` (rm www/, copy index.html + images/ + lib/) when the modified file is the project's `index.html`. Silent for any other path. Surfaces `📦 www/ synced` via `systemMessage` so the user sees it ran. |
+| **Cache-buster on commit** | `PostToolUse` on `Bash` | [cache-buster-after-commit.sh](.claude/hooks/cache-buster-after-commit.sh) | If the Bash command contains `git commit` (covers compound chains like `git add && git commit && git push`), runs `scripts/check-cachebuster.sh` and surfaces the recommended `?v=N` share URL via `systemMessage`. Catches the "forgot to bump v" trap. |
+| **Stop beep** | `Stop` | _inline_ | Two short PowerShell `[console]::beep` tones at end of every turn — audible cue when a long task finishes. |
+| **Keystore protection** | `PreToolUse` on `Edit\|Write\|MultiEdit` | [protect-keystore.sh](.claude/hooks/protect-keystore.sh) | Emits `permissionDecision: "deny"` for any `*.keystore`, `*.jks`, or `*keystore.properties` path so automated edits to signing credentials are refused before the tool runs. |
+
+**Caveats:**
+
+- The Claude Code settings watcher only reloads `.claude/settings.json` automatically if the file existed when the session started AND if changes are to ALREADY-PRESENT top-level keys. Adding a brand-new `hooks` section to a settings file that previously had only `permissions` may not auto-reload — open `/hooks` once or restart the session. Subsequent edits to the existing hooks section reload fine.
+- Scripts use `node -e` to parse the stdin JSON because `jq` isn't installed on this dev machine. If you ever switch dev environments, either install jq or keep the node pattern — both work cross-platform.
+- All scripts `exit 0` on the non-matching branch — never block via exit code, only via the JSON `permissionDecision` field. This keeps the hooks invisible when they don't apply (per Claude Code convention: "silent success is invisible by design").
+- The Stop beep uses `powershell.exe` (Windows PowerShell 5.1, ships with Windows) rather than `pwsh` so it works without an extra install.
+
 ## Conventions picked up from the user
 
 - **Icons**: inline Heroicons outline SVGs (24×24, `stroke-linecap` and `stroke-linejoin` set to `round` on each `<path>`) with CSS `stroke: currentColor; fill: none; stroke-width: 1.5`. Look up paths at https://heroicons.com before guessing. Icons in use: `bell` (notification), `x-mark` (close), `arrow-left` (back), `arrow-path` (reset), `arrow-down-tray` (download), `arrows-up-down` (뒤집기), `photo` (사진 저장), `film` (영상 저장), `squares-2x2` (모두 저장), `play` (video badge). The "텍스트" T glyph stays as a custom path (no direct Heroicons equivalent), and the toast success ring/check keeps its bespoke animated structure.

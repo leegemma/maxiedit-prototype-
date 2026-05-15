@@ -331,6 +331,39 @@ Doc edits are staged with the source change so each commit is `(source + docs)` 
 
 See [SKILLS.md](SKILLS.md) for which Claude Code skills to invoke (and which to skip) for this project.
 
+## Claude Code automation
+
+The repo has `.claude/hooks/` and `.claude/commands/` checked in so any clone gets the same workflow shortcuts. Both are committed; team members get them automatically.
+
+### Hooks (auto-fire on Claude Code events)
+
+Configured in [.claude/settings.json](.claude/settings.json), scripts in [.claude/hooks/](.claude/hooks/):
+
+| Event | Script | Behavior |
+|---|---|---|
+| `PreToolUse` on `Edit\|Write\|MultiEdit` | `protect-keystore.sh` | Deny edits to `*.keystore`, `*.jks`, `*keystore.properties` — signing credentials must be edited manually |
+| `PostToolUse` on `Edit\|Write\|MultiEdit` | `sync-on-index-edit.sh` | When `index.html` is modified, auto-run `sync:www` so `www/` stays current with the live source |
+| `PostToolUse` on `Bash` | `cache-buster-after-commit.sh` | When the bash command contained `git commit`, run `check-cachebuster.sh` and surface the recommended `?v=N` share URL |
+| `Stop` | (inline PowerShell beep) | Two-tone audible cue at end of every Claude turn |
+
+Scripts parse stdin JSON via `node -e` (jq isn't installed). Non-matching paths exit silently — silent success is invisible by design.
+
+**Watcher caveat**: A brand-new `hooks` key added mid-session to an existing `.claude/settings.json` may not auto-reload — open `/hooks` once or restart Claude Code to activate. Subsequent edits to the same `hooks` key reload normally.
+
+### Slash commands (user-invoked shortcuts)
+
+[.claude/commands/](.claude/commands/) contains 5 commands invoked as `/name` in chat:
+
+| Command | What it does |
+|---|---|
+| `/sync` | Refresh `www/` mirror (`rm -rf www && cp index.html ...`) + `npx cap sync android` |
+| `/apk` | Full debug pipeline: sync → cap sync → `./gradlew assembleDebug` → adb install → BOOX enable → force-stop → launch |
+| `/release` | Build + verify signed `app-release.aab` for Play Console (does not push or upload) |
+| `/ship <msg>` | Stage relevant files → commit with `<msg>` + Claude co-author → push → run cache-buster → share `?v=N` URL. Refuses to stage `www/` or keystore files. Auto-updates HISTORY.md for substantive changes |
+| `/status` | git status + last 5 commits + cache-buster N + Play Store release progress (from memory) |
+
+Adding a new command: drop a markdown file in `.claude/commands/`. Frontmatter `description` shows in the command palette; `argument-hint` (optional) hints at expected args; body is the prompt Claude receives when the command fires. Use `$ARGUMENTS` placeholder for user-typed args.
+
 ## Hooks ([.claude/hooks/](.claude/hooks/))
 
 Four hooks are wired in [.claude/settings.json](.claude/settings.json) — all read Claude Code's stdin JSON via `node -e` (no `jq` dependency) and write nothing to disk except the cap:sync side-effect.
